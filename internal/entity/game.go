@@ -7,6 +7,9 @@ type Game struct {
 	Rating      int
 	Description string
 	Genres      string
+	DeveloperId int
 	Developer   Developer
+	PublisherId int
 	Publisher   Publisher
+	Steam       string
 }

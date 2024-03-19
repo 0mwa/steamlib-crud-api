@@ -91,19 +91,13 @@ type GameOut struct {
 	DeveloperId *string `json:"developer_id"`
 	PublisherId *string `json:"publisher_id"`
 	SteamId     *string `json:"steam_id"`
-	Error       *string `json:"err"`
-}
-
-type GamesOut struct {
-	Games []GameOut
 }
 
 type DevOut struct {
 	Name    *string `json:"name"`
 	Country *string `json:"country"`
-	Error   *string `json:"err"`
 }
 
 type ErrOut struct {
-	Error *string `json:"err"`
+	Error string `json:"error"`
 }
