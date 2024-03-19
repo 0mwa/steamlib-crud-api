@@ -94,6 +94,10 @@ type GameOut struct {
 	Error       *string `json:"err"`
 }
 
+type GamesOut struct {
+	Games []GameOut
+}
+
 type DevOut struct {
 	Name    *string `json:"name"`
 	Country *string `json:"country"`
