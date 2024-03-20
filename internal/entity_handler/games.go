@@ -5,7 +5,7 @@ import (
 	"TestProject/internal/entity"
 	"database/sql"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -16,63 +16,11 @@ type Games struct {
 	Logger *zap.SugaredLogger
 }
 
-func (g Games) Get(w http.ResponseWriter, r *http.Request) {
-	var err error
-	if r.Method != http.MethodGet {
-		g.Logger.Error("405 - Wrong method")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		_, err = w.Write([]byte("405 - Wrong method\n"))
-		if err != nil {
-			g.Logger.Error(err)
-			return
-		}
-		return
-	}
-
-	var errrr internal.ErrOut
-	var result *sql.Rows
-	var marshaled []byte
-
-	id := r.PathValue("id")
-	//fmt.Printf("\n Got id : %s \n", id)
-	db := internal.GetBD()
-
-	result, err = db.Query(internal.SelectGameById, id)
+func (g Games) errToJson(w http.ResponseWriter, externalError error) {
+	errrr := internal.ErrOut{externalError.Error()}
+	marshaled, err := json.Marshal(errrr)
 	if err != nil {
 		g.Logger.Error(err)
-		return
-	}
-	game := entity.Game{}
-	//fmt.Printf("\n %v \n", result)
-	result.Next()
-	err = result.Scan(&game.Name, &game.Img, &game.Description, &game.Rating, &game.DeveloperId, &game.PublisherId, &game.Steam)
-	if err != nil {
-		errrr = internal.ErrOut{err.Error()}
-		marshaled, err = json.Marshal(errrr)
-		if err != nil {
-			g.Logger.Error(err)
-			return
-		}
-		_, err = w.Write(marshaled)
-		if err != nil {
-			g.Logger.Error(err)
-			return
-		}
-		return
-	}
-	marshaled, err = json.Marshal(game)
-	if err != nil {
-		errrr = internal.ErrOut{err.Error()}
-		marshaled, err = json.Marshal(errrr)
-		if err != nil {
-			g.Logger.Error(err)
-			return
-		}
-		_, err = w.Write(marshaled)
-		if err != nil {
-			g.Logger.Error(err)
-			return
-		}
 		return
 	}
 	_, err = w.Write(marshaled)
@@ -81,15 +29,57 @@ func (g Games) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-func (g Games) GetAll(w http.ResponseWriter, r *http.Request) {
+
+func (g Games) Get(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
+		g.Logger.Error(MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		w.Write([]byte("405 - Wrong method\n"))
-		g.Logger.Error("405 - Wrong method")
+		g.errToJson(w, errors.New(MethodError))
 		return
 	}
 
-	var errrr internal.ErrOut
+	var err error
+	var result *sql.Rows
+	var marshaled []byte
+
+	id := r.PathValue("id")
+	db := internal.GetBD()
+
+	result, err = db.Query(internal.SelectGameById, id)
+	if err != nil {
+		g.Logger.Error(err)
+		g.errToJson(w, err)
+		return
+	}
+	game := entity.Game{}
+	result.Next()
+	err = result.Scan(&game.Name, &game.Img, &game.Description, &game.Rating, &game.DeveloperId, &game.PublisherId, &game.Steam)
+	if err != nil {
+		g.Logger.Error(err)
+		g.errToJson(w, err)
+		return
+	}
+	marshaled, err = json.Marshal(game)
+	if err != nil {
+		g.Logger.Error(err)
+		g.errToJson(w, err)
+		return
+	}
+	_, err = w.Write(marshaled)
+	if err != nil {
+		g.Logger.Error(err)
+		g.errToJson(w, err)
+		return
+	}
+}
+func (g Games) GetAll(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		g.Logger.Error(MethodError)
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		g.errToJson(w, errors.New(MethodError))
+		return
+	}
+
 	var marshaled []byte
 	var result *sql.Rows
 	var getQuery = r.URL.RawQuery
@@ -101,12 +91,14 @@ func (g Games) GetAll(w http.ResponseWriter, r *http.Request) {
 		result, err = db.Query(internal.SelectGamesSortName)
 		if err != nil {
 			g.Logger.Error(err)
+			g.errToJson(w, err)
 			return
 		}
 	default:
 		result, err = db.Query(internal.SelectGames)
 		if err != nil {
 			g.Logger.Error(err)
+			g.errToJson(w, err)
 			return
 		}
 	}
@@ -115,98 +107,73 @@ func (g Games) GetAll(w http.ResponseWriter, r *http.Request) {
 	for result.Next() {
 		err = result.Scan(&game.Name, &game.Img, &game.Description, &game.Rating, &game.DeveloperId, &game.PublisherId, &game.Steam)
 		if err != nil {
-			errrr = internal.ErrOut{err.Error()}
-			marshaled, err = json.Marshal(errrr)
-			if err != nil {
-				g.Logger.Error(err)
-				return
-			}
-			_, err = w.Write(marshaled)
-			if err != nil {
-				g.Logger.Error(err)
-				return
-			}
+			g.Logger.Error(err)
+			g.errToJson(w, err)
 			return
 		}
 		games = append(games, game)
 	}
 	marshaled, err = json.Marshal(games)
 	if err != nil {
-		errrr = internal.ErrOut{err.Error()}
-		marshaled, err = json.Marshal(errrr)
-		if err != nil {
-			g.Logger.Error(err)
-			return
-		}
-		_, err = w.Write(marshaled)
-		if err != nil {
-			g.Logger.Error(err)
-			return
-		}
+		g.Logger.Error(err)
+		g.errToJson(w, err)
 		return
 	}
 	_, err = w.Write(marshaled)
 	if err != nil {
 		g.Logger.Error(err)
+		g.errToJson(w, err)
 		return
 	}
 }
 func (g Games) Post(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
+		g.Logger.Error(MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		w.Write([]byte("405 - Wrong method\n"))
-		g.Logger.Error("405 - Wrong method")
+		g.errToJson(w, errors.New(MethodError))
 		return
 	}
 
 	db := internal.GetBD()
-	//apiKey := os.Getenv("API_KEY")
 	id := r.PathValue("id")
 	var response *internal.SteamResponse
 	response = &internal.SteamResponse{GameList: make(map[string]internal.SteamResponseElement)}
 	get, err := http.Get("https://store.steampowered.com/api/appdetails?appids=" + id)
 	if err != nil {
 		g.Logger.Error(err)
+		g.errToJson(w, err)
 		return
 	}
 	readall, err := io.ReadAll(get.Body)
 	if err != nil {
 		g.Logger.Error(err)
+		g.errToJson(w, err)
 		return
 	}
 	err = json.Unmarshal(readall, response)
 	if err != nil {
 		g.Logger.Error(err)
+		g.errToJson(w, err)
 		return
 	}
-	//fmt.Println(*response)
 	gameName := response.GameList[id].Data.Name
 	gameImage := response.GameList[id].Data.HeaderImage
 	gameDescription := response.GameList[id].Data.ShortDescription[:internal.MyMin(255, cap([]byte(response.GameList[id].Data.ShortDescription)))]
-	//fmt.Println(gameName)
 	if gameName != "" {
 		_, err = db.Query("INSERT INTO games (steam_id, name, img, description) VALUES ($1, $2, $3, $4)", id, gameName, gameImage, gameDescription)
 		if err != nil {
 			if strings.Contains(err.Error(), "\"steam_id_unique\"") {
-				fmt.Println(err)
 				w.WriteHeader(http.StatusConflict)
-				_, err = w.Write([]byte("409 - Game already exists!\n"))
-				if err != nil {
-					g.Logger.Error(err)
-					return
-				}
+				g.errToJson(w, errors.New("409 - Game already exists"))
 			} else {
 				g.Logger.Error(err)
+				g.errToJson(w, err)
 				return
 			}
 		}
 	} else {
 		w.WriteHeader(http.StatusConflict)
-		_, err = w.Write([]byte("409 - No game with such id!\n"))
-		if err != nil {
-			g.Logger.Error(err)
-			return
-		}
+		g.errToJson(w, errors.New("409 - No game with such id"))
 	}
 }
 func (g Games) Del(w http.ResponseWriter, r *http.Request) {}
