@@ -8,6 +8,8 @@ import (
 
 var db *sql.DB
 
+// API json err responde
+
 func GetBD() *sql.DB {
 	file := "postgres://postgres:omw@localhost:5432/postgres?sslmode=disable"
 	var err error
@@ -64,33 +66,19 @@ type SteamResponse struct {
 
 // OurAPI json response struct
 
-type IdIn struct {
-	Id string `json:"id"`
-}
-
 type GameIn struct {
 	Name        *string `json:"name"`
 	Img         *string `json:"img"`
 	Description *string `json:"description"`
-	Rating      *string `json:"rating"`
-	DeveloperId *string `json:"developer_id"`
-	PublisherId *string `json:"publisher_id"`
-	SteamId     *string `json:"steam_id"`
+	Rating      *int    `json:"rating"`
+	DeveloperId *int    `json:"developer_id"`
+	PublisherId *int    `json:"publisher_id"`
+	SteamId     *int    `json:"steam_id"`
 }
 
 type DevIn struct {
 	Name    *string `json:"name"`
 	Country *string `json:"country"`
-}
-
-type GameOut struct {
-	Name        *string `json:"name"`
-	Img         *string `json:"img"`
-	Description *string `json:"description"`
-	Rating      *string `json:"rating"`
-	DeveloperId *string `json:"developer_id"`
-	PublisherId *string `json:"publisher_id"`
-	SteamId     *string `json:"steam_id"`
 }
 
 type DevOut struct {

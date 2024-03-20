@@ -11,5 +11,5 @@ type Game struct {
 	Developer   Developer
 	PublisherId int
 	Publisher   Publisher
-	Steam       string
+	Steam       int
 }
