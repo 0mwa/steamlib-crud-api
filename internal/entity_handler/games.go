@@ -176,5 +176,85 @@ func (g Games) Post(w http.ResponseWriter, r *http.Request) {
 		g.errToJson(w, errors.New("409 - No game with such id"))
 	}
 }
-func (g Games) Del(w http.ResponseWriter, r *http.Request) {}
-func (g Games) Put(w http.ResponseWriter, r *http.Request) {}
+func (g Games) Del(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		g.Logger.Error(MethodError)
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		g.errToJson(w, errors.New(MethodError))
+		return
+	}
+
+	var err error
+	var response *sql.Rows
+
+	db := internal.GetBD()
+	id := r.PathValue("id")
+	response, err = db.Query(internal.SelectGameById, id)
+	if err != nil {
+		g.Logger.Error(err)
+		g.errToJson(w, err)
+		return
+	}
+	if !response.Next() {
+		g.Logger.Error(err)
+		g.errToJson(w, errors.New("409 - no game to delete with such id"))
+		return
+	}
+	_, err = db.Query(internal.DeleteGameById, id)
+	if err != nil {
+		g.Logger.Error(err)
+		g.errToJson(w, err)
+		return
+	}
+}
+func (g Games) Put(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		g.Logger.Error(MethodError)
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		g.errToJson(w, errors.New(MethodError))
+		return
+	}
+
+	var err error
+	var requestBody []byte
+	var response *sql.Rows
+
+	newStruct := internal.GameIn{}
+	requestBody, err = io.ReadAll(r.Body)
+	if err != nil {
+		g.Logger.Error(err)
+		g.errToJson(w, err)
+		return
+	}
+	err = json.Unmarshal(requestBody, &newStruct)
+	if err != nil {
+		g.Logger.Error(err)
+		g.errToJson(w, err)
+		return
+	}
+
+	// ToDo struct fields validator  all fields <= 255 symbols etc https://pkg.go.dev/github.com/go-playground/validator/v10
+
+	db := internal.GetBD()
+	id := r.PathValue("id")
+	response, err = db.Query(internal.SelectGameById, id)
+	if err != nil {
+		g.Logger.Error(err)
+		g.errToJson(w, err)
+		return
+	}
+	if !response.Next() {
+		g.Logger.Error(err)
+		g.errToJson(w, errors.New("409 - no game to update with such id"))
+		return
+	}
+	_, err = db.Query(internal.UpdateGameById, newStruct.Name, newStruct.Img, newStruct.Description, newStruct.Rating, newStruct.DeveloperId, newStruct.PublisherId, id)
+	if err != nil {
+		g.Logger.Error(err)
+		g.errToJson(w, err)
+		return
+	}
+
+}
+
+// ToDo PutFunc via steamAPI

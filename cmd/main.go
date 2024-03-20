@@ -17,6 +17,8 @@ func main() {
 	http.HandleFunc("/games", a.GetAll)
 	http.HandleFunc("/games/{id}", a.Get)
 	http.HandleFunc("/games/add/{id}", a.Post)
+	http.HandleFunc("/games/delete/{id}", a.Del)
+	http.HandleFunc("/games/update/{id}", a.Put)
 
 	err := http.ListenAndServe(":3333", nil)
 	if err != nil {

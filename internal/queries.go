@@ -34,3 +34,20 @@ var SelectGameById = `
 			FROM games
 			WHERE steam_id = $1
 `
+var DeleteGameById = `
+			DELETE
+			FROM games
+			Where steam_id = $1
+`
+
+var UpdateGameById = `
+			UPDATE games
+			SET 
+			    name = $1,
+			    img = $2,
+			    description = $3,
+			    rating = $4,
+			    developer_id = $5,
+			    publisher_id = $6
+			WHERE steam_id = $7
+`
