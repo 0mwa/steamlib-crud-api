@@ -219,14 +219,14 @@ func (g Games) Put(w http.ResponseWriter, r *http.Request) {
 	var requestBody []byte
 	var response *sql.Rows
 
-	newStruct := internal.GameIn{}
+	gameStruct := internal.GameIn{}
 	requestBody, err = io.ReadAll(r.Body)
 	if err != nil {
 		g.Logger.Error(err)
 		g.errToJson(w, err)
 		return
 	}
-	err = json.Unmarshal(requestBody, &newStruct)
+	err = json.Unmarshal(requestBody, &gameStruct)
 	if err != nil {
 		g.Logger.Error(err)
 		g.errToJson(w, err)
@@ -248,7 +248,7 @@ func (g Games) Put(w http.ResponseWriter, r *http.Request) {
 		g.errToJson(w, errors.New("409 - no game to update with such id"))
 		return
 	}
-	_, err = db.Query(internal.UpdateGameById, newStruct.Name, newStruct.Img, newStruct.Description, newStruct.Rating, newStruct.DeveloperId, newStruct.PublisherId, id)
+	_, err = db.Query(internal.UpdateGameById, gameStruct.Name, gameStruct.Img, gameStruct.Description, gameStruct.Rating, gameStruct.DeveloperId, gameStruct.PublisherId, id)
 	if err != nil {
 		g.Logger.Error(err)
 		g.errToJson(w, err)
