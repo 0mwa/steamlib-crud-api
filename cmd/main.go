@@ -3,6 +3,7 @@ package main
 import (
 	"TestProject/internal"
 	"TestProject/internal/entity_handler"
+	"github.com/go-playground/validator/v10"
 	_ "golang.org/x/net/html"
 	"net/http"
 )
@@ -10,9 +11,10 @@ import (
 func main() {
 
 	logger := internal.NewLogger()
+	validate := validator.New(validator.WithRequiredStructEnabled())
 	defer logger.Sync() // flushes buffer, if any
 
-	a := entity_handler.Games{logger}
+	a := entity_handler.Games{logger, validate}
 
 	http.HandleFunc("/games", a.GetAll)
 	http.HandleFunc("/games/{id}", a.Get)

@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -13,7 +14,8 @@ import (
 )
 
 type Games struct {
-	Logger *zap.SugaredLogger
+	Logger    *zap.SugaredLogger
+	Validator *validator.Validate
 }
 
 func (g Games) errToJson(w http.ResponseWriter, externalError error) {
@@ -233,7 +235,11 @@ func (g Games) Put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ToDo struct fields validator  all fields <= 255 symbols etc https://pkg.go.dev/github.com/go-playground/validator/v10
+	if err = g.Validator.Struct(&gameStruct); err != nil {
+		g.Logger.Error(err)
+		g.errToJson(w, err)
+		return
+	}
 
 	db := internal.GetBD()
 	id := r.PathValue("id")

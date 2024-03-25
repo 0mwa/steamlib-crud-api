@@ -67,13 +67,13 @@ type SteamResponse struct {
 // OurAPI json response struct
 
 type GameIn struct {
-	Name        *string `json:"name"`
-	Img         *string `json:"img"`
-	Description *string `json:"description"`
-	Rating      *int    `json:"rating"`
-	DeveloperId *int    `json:"developer_id"`
-	PublisherId *int    `json:"publisher_id"`
-	SteamId     *int    `json:"steam_id"`
+	Name        *string `json:"name" validate:"max=255"`
+	Img         *string `json:"img" validate:"max=255"`
+	Description *string `json:"description" validate:"max=255"`
+	Rating      *int    `json:"rating" validate:"numeric,gte=0,lte=10"`
+	DeveloperId *int    `json:"developer_id" validate:"numeric,gte=0"`
+	PublisherId *int    `json:"publisher_id" validate:"numeric,gte=0"`
+	SteamId     *int    `json:"steam_id" validate:"required,numeric,gte=0"`
 }
 
 type DevIn struct {
