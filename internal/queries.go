@@ -50,4 +50,29 @@ var UpdateGameById = `
 			    developer_id = $5,
 			    publisher_id = $6
 			WHERE steam_id = $7
-`
+		`
+var SelectPublishers = `
+			SELECT
+				COALESCE(name,'NULL'),
+				COALESCE(country,'NULL')
+			FROM publishers
+		`
+var SelectPublisherById = `
+			SELECT
+				COALESCE(name,'NULL'),
+				COALESCE(country,'NULL')
+			FROM publishers
+			WHERE steam_id = $1
+		`
+var DeletePublisherById = `
+			DELETE
+			FROM publishers
+			WHERE steam_id = $1
+		`
+var UpdatePublisherById = `
+			UPDATE publishers
+			SET
+			    name = $1,
+				country = $2
+			WHERE steam_id = $3
+		`

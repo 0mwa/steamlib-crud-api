@@ -3,6 +3,7 @@ module TestProject
 go 1.22
 
 require (
+	github.com/Pallinder/go-randomdata v1.2.0
 	github.com/go-playground/validator/v10 v10.19.0
 	github.com/lib/pq v1.10.9
 	go.uber.org/zap v1.27.0

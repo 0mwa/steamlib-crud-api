@@ -51,9 +51,11 @@ func (r SteamResponse) UnmarshalJSON(data []byte) error {
 // SteamAPI json response struct
 
 type SteamResponseElementData struct {
-	Name             string `json:"name"`
-	HeaderImage      string `json:"header_image"`
-	ShortDescription string `json:"short_description"`
+	Name             string   `json:"name"`
+	HeaderImage      string   `json:"header_image"`
+	ShortDescription string   `json:"short_description"`
+	Publishers       []string `json:"publishers"`
+	//Developers     []string `json:"developers"`
 }
 
 type SteamResponseElement struct {
@@ -76,14 +78,9 @@ type GameIn struct {
 	SteamId     *int    `json:"steam_id" validate:"required,numeric,gte=0"`
 }
 
-type DevIn struct {
-	Name    *string `json:"name"`
-	Country *string `json:"country"`
-}
-
-type DevOut struct {
-	Name    *string `json:"name"`
-	Country *string `json:"country"`
+type DevPubIn struct {
+	Name    *string `json:"name" validate:"max=255"`
+	Country *string `json:"country" validate:"max=255"`
 }
 
 type ErrOut struct {
