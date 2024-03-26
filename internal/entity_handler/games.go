@@ -43,10 +43,8 @@ func (g Games) Get(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var result *sql.Rows
 	var marshaled []byte
-
 	id := r.PathValue("id")
 	db := internal.GetBD()
-
 	result, err = db.Query(internal.SelectGameById, id)
 	if err != nil {
 		g.Logger.Error(err)
@@ -55,7 +53,7 @@ func (g Games) Get(w http.ResponseWriter, r *http.Request) {
 	}
 	game := entity.Game{}
 	result.Next()
-	err = result.Scan(&game.Name, &game.Img, &game.Description, &game.Rating, &game.DeveloperId, &game.PublisherId, &game.Steam)
+	err = result.Scan(&game.Name, &game.Img, &game.Description, &game.Rating, &game.DeveloperId, &game.PublisherId, &game.SteamId)
 	if err != nil {
 		g.Logger.Error(err)
 		g.errToJson(w, err)
@@ -84,30 +82,20 @@ func (g Games) GetAll(w http.ResponseWriter, r *http.Request) {
 
 	var marshaled []byte
 	var result *sql.Rows
-	var getQuery = r.URL.RawQuery
 	var err error
 
 	db := internal.GetBD()
-	switch getQuery {
-	case "sort:name":
-		result, err = db.Query(internal.SelectGamesSortName)
-		if err != nil {
-			g.Logger.Error(err)
-			g.errToJson(w, err)
-			return
-		}
-	default:
-		result, err = db.Query(internal.SelectGames)
-		if err != nil {
-			g.Logger.Error(err)
-			g.errToJson(w, err)
-			return
-		}
+	result, err = db.Query(internal.SelectGames)
+	if err != nil {
+		g.Logger.Error(err)
+		g.errToJson(w, err)
+		return
 	}
+
 	games := make([]entity.Game, 0)
 	game := entity.Game{}
 	for result.Next() {
-		err = result.Scan(&game.Name, &game.Img, &game.Description, &game.Rating, &game.DeveloperId, &game.PublisherId, &game.Steam)
+		err = result.Scan(&game.Name, &game.Img, &game.Description, &game.Rating, &game.DeveloperId, &game.PublisherId, &game.SteamId)
 		if err != nil {
 			g.Logger.Error(err)
 			g.errToJson(w, err)
@@ -262,5 +250,3 @@ func (g Games) Put(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
-
-// ToDo PutFunc via steamAPI

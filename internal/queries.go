@@ -11,7 +11,6 @@ var SelectGames = `
 			    COALESCE(steam_id,0)
 			FROM games
 		`
-
 var SelectGamesSortName = `
 			SELECT 
 			    COALESCE(name,'NULL'),
@@ -21,7 +20,6 @@ var SelectGamesSortName = `
 			FROM games
 			ORDER BY name
 		`
-
 var SelectGameById = `
 			SELECT
 			    COALESCE(name,'NULL'),
@@ -33,13 +31,12 @@ var SelectGameById = `
 			    COALESCE(steam_id,0)
 			FROM games
 			WHERE steam_id = $1
-`
+		`
 var DeleteGameById = `
 			DELETE
 			FROM games
-			Where steam_id = $1
-`
-
+			WHERE steam_id = $1
+		`
 var UpdateGameById = `
 			UPDATE games
 			SET 

@@ -72,10 +72,9 @@ type GameIn struct {
 	Name        *string `json:"name" validate:"max=255"`
 	Img         *string `json:"img" validate:"max=255"`
 	Description *string `json:"description" validate:"max=255"`
-	Rating      *int    `json:"rating" validate:"numeric,gte=0,lte=10"`
-	DeveloperId *int    `json:"developer_id" validate:"numeric,gte=0"`
-	PublisherId *int    `json:"publisher_id" validate:"numeric,gte=0"`
-	SteamId     *int    `json:"steam_id" validate:"required,numeric,gte=0"`
+	Rating      *int    `json:"rating" validate:"gte=0,lte=10"`
+	DeveloperId *int    `json:"developer_id" validate:"gte=0"`
+	PublisherId *int    `json:"publisher_id" validate:"gte=0"`
 }
 
 type DevPubIn struct {
