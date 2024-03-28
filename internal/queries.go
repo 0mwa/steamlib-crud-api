@@ -66,3 +66,30 @@ var UpdatePublisherById = `
 				country = $2
 			WHERE steam_id = $3
 		`
+var SelectDevelopers = `
+			SELECT
+				COALESCE(name,'NULL'),
+				COALESCE(country,'NULL'),
+				COALESCE(steam_id,0)
+			FROM developers
+		`
+var SelectDeveloperById = `
+			SELECT
+				COALESCE(name,'NULL'),
+				COALESCE(country,'NULL'),
+				COALESCE(steam_id,0)
+			FROM developers
+			WHERE steam_id = $1
+		`
+var DeleteDeveloperById = `
+			DELETE
+			FROM developers
+			WHERE steam_id = $1
+		`
+var UpdateDeveloperById = `
+			UPDATE developers
+			SET
+			    name = $1,
+				country = $2
+			WHERE steam_id = $3
+		`
