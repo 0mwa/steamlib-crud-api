@@ -158,6 +158,7 @@ func (p Publishers) Post(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			if strings.Contains(err.Error(), "\"pubsteam_id_unique\"") {
 				w.WriteHeader(http.StatusConflict)
+				p.Logger.Error(errors.New("409 - Publisher already exists"))
 				p.errToJson(w, errors.New("409 - Publisher already exists"))
 			} else {
 				p.Logger.Error(err)
@@ -167,6 +168,7 @@ func (p Publishers) Post(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		w.WriteHeader(http.StatusConflict)
+		p.Logger.Error(errors.New("409 - No publisher with such id"))
 		p.errToJson(w, errors.New("409 - No publisher with such id"))
 	}
 }
@@ -190,7 +192,7 @@ func (p Publishers) Del(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !response.Next() {
-		p.Logger.Error(err)
+		p.Logger.Error(errors.New("409 - no publisher to delete with such id"))
 		p.errToJson(w, errors.New("409 - no publisher to delete with such id"))
 		return
 	}
@@ -242,7 +244,7 @@ func (p Publishers) Put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !response.Next() {
-		p.Logger.Error(err)
+		p.Logger.Error(errors.New("409 - no publisher to update with such id"))
 		p.errToJson(w, errors.New("409 - no publisher to update with such id"))
 		return
 	}

@@ -79,7 +79,7 @@ type GameIn struct {
 
 type DevPubIn struct {
 	Name    *string `json:"name" validate:"max=255"`
-	Country *string `json:"country" validate:"max=255"`
+	Country *string `json:"country" validate:"max=100"`
 }
 
 type ErrOut struct {

@@ -158,6 +158,7 @@ func (g Games) Post(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			if strings.Contains(err.Error(), "\"steam_id_unique\"") {
 				w.WriteHeader(http.StatusConflict)
+				g.Logger.Error(errors.New("409 - Game already exists"))
 				g.errToJson(w, errors.New("409 - Game already exists"))
 			} else {
 				g.Logger.Error(err)
@@ -167,6 +168,7 @@ func (g Games) Post(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		w.WriteHeader(http.StatusConflict)
+		g.Logger.Error(errors.New("409 - No game with such id"))
 		g.errToJson(w, errors.New("409 - No game with such id"))
 	}
 }
@@ -190,7 +192,7 @@ func (g Games) Del(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !response.Next() {
-		g.Logger.Error(err)
+		g.Logger.Error(errors.New("409 - no game to delete with such id"))
 		g.errToJson(w, errors.New("409 - no game to delete with such id"))
 		return
 	}
@@ -242,7 +244,7 @@ func (g Games) Put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !response.Next() {
-		g.Logger.Error(err)
+		g.Logger.Error(errors.New("409 - no game to update with such id"))
 		g.errToJson(w, errors.New("409 - no game to update with such id"))
 		return
 	}

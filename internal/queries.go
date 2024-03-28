@@ -11,15 +11,6 @@ var SelectGames = `
 			    COALESCE(steam_id,0)
 			FROM games
 		`
-var SelectGamesSortName = `
-			SELECT 
-			    COALESCE(name,'NULL'),
-			    COALESCE(img,'NULL'),
-			    COALESCE(rating,0),
-			    COALESCE(description,'NULL')
-			FROM games
-			ORDER BY name
-		`
 var SelectGameById = `
 			SELECT
 			    COALESCE(name,'NULL'),
@@ -51,13 +42,15 @@ var UpdateGameById = `
 var SelectPublishers = `
 			SELECT
 				COALESCE(name,'NULL'),
-				COALESCE(country,'NULL')
+				COALESCE(country,'NULL'),
+				COALESCE(steam_id,0)
 			FROM publishers
 		`
 var SelectPublisherById = `
 			SELECT
 				COALESCE(name,'NULL'),
-				COALESCE(country,'NULL')
+				COALESCE(country,'NULL'),
+				COALESCE(steam_id,0)
 			FROM publishers
 			WHERE steam_id = $1
 		`
