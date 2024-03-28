@@ -14,20 +14,19 @@ func main() {
 	validate := validator.New(validator.WithRequiredStructEnabled())
 	defer logger.Sync() // flushes buffer, if any
 
-	a := entity_handler.Games{logger, validate}
-	b := entity_handler.Publishers{logger, validate}
+	entityHandlers := []entity_handler.EntityHandler{
+		entity_handler.Games{logger, validate},
+		entity_handler.Publishers{logger, validate},
+		entity_handler.Developers{logger, validate},
+	}
 
-	http.HandleFunc("/games", a.GetAll)
-	http.HandleFunc("/games/{id}", a.Get)
-	http.HandleFunc("/games/add/{id}", a.Post)
-	http.HandleFunc("/games/delete/{id}", a.Del)
-	http.HandleFunc("/games/update/{id}", a.Put)
-
-	http.HandleFunc("/publishers", b.GetAll)
-	http.HandleFunc("/publishers/{id}", b.Get)
-	http.HandleFunc("/publishers/add/{id}", b.Post)
-	http.HandleFunc("/publishers/delete/{id}", b.Del)
-	http.HandleFunc("/publishers/update/{id}", b.Put)
+	for _, v := range entityHandlers {
+		http.HandleFunc("/"+v.GetPath(), v.GetAll)
+		http.HandleFunc("/"+v.GetPath()+"/{id}", v.Get)
+		http.HandleFunc("/"+v.GetPath()+"/add/{id}", v.Post)
+		http.HandleFunc("/"+v.GetPath()+"/delete/{id}", v.Del)
+		http.HandleFunc("/"+v.GetPath()+"/update/{id}", v.Put)
+	}
 
 	err := http.ListenAndServe(":3333", nil)
 	if err != nil {

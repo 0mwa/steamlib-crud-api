@@ -19,6 +19,10 @@ type Publishers struct {
 	Validator *validator.Validate
 }
 
+func (p Publishers) GetPath() string {
+	return "publishers"
+}
+
 func (p Publishers) errToJson(w http.ResponseWriter, externalError error) {
 	errrr := internal.ErrOut{externalError.Error()}
 	marshaled, err := json.Marshal(errrr)

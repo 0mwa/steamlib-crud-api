@@ -18,6 +18,10 @@ type Games struct {
 	Validator *validator.Validate
 }
 
+func (g Games) GetPath() string {
+	return "games"
+}
+
 func (g Games) errToJson(w http.ResponseWriter, externalError error) {
 	errrr := internal.ErrOut{externalError.Error()}
 	marshaled, err := json.Marshal(errrr)

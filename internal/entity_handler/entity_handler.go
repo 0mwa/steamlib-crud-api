@@ -10,4 +10,5 @@ type EntityHandler interface {
 	Post(w http.ResponseWriter, r *http.Request)
 	Del(w http.ResponseWriter, r *http.Request)
 	Put(w http.ResponseWriter, r *http.Request)
+	GetPath() string
 }
