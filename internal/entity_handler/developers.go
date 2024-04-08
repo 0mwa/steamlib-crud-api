@@ -271,8 +271,8 @@ func (d Developers) GetCounter(w http.ResponseWriter, r *http.Request) {
 	}
 	count := internal.Counter{}
 	var marshaled []byte
-
-	_, err := d.Rds.Get(context.Background(), DevelopersCounter).Result()
+	var err error
+	count.Count, err = d.Rds.Get(context.Background(), DevelopersCounter).Result()
 	if errors.Is(err, redis.Nil) {
 		db := internal.GetBD()
 		err = db.QueryRow(internal.GetDevelopersCount).Scan(&count.Count)
@@ -299,12 +299,6 @@ func (d Developers) GetCounter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	d.Logger.Infof("Redis key %s is found, getting data from Redis", DevelopersCounter)
-	count.Count, err = d.Rds.Get(context.Background(), DevelopersCounter).Result()
-	if err != nil {
-		d.Logger.Error(err)
-		d.errToJson(w, err)
-		return
-	}
 	marshaled, err = json.Marshal(count)
 	if err != nil {
 		d.Logger.Error(err)

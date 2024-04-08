@@ -272,7 +272,8 @@ func (g Games) GetCounter(w http.ResponseWriter, r *http.Request) {
 	}
 	count := internal.Counter{}
 	var marshaled []byte
-	_, err := g.Rds.Get(context.Background(), GamesCounter).Result()
+	var err error
+	count.Count, err = g.Rds.Get(context.Background(), GamesCounter).Result()
 	if errors.Is(err, redis.Nil) {
 		db := internal.GetBD()
 		err = db.QueryRow(internal.GetGamesCount).Scan(&count.Count)
@@ -297,14 +298,7 @@ func (g Games) GetCounter(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-
 	g.Logger.Infof("Redis key %s is found, getting data from Redis", GamesCounter)
-	count.Count, err = g.Rds.Get(context.Background(), GamesCounter).Result()
-	if err != nil {
-		g.Logger.Error(err)
-		g.errToJson(w, err)
-		return
-	}
 	marshaled, err = json.Marshal(count)
 	if err != nil {
 		g.Logger.Error(err)
