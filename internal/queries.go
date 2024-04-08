@@ -93,3 +93,15 @@ var UpdateDeveloperById = `
 				country = $2
 			WHERE steam_id = $3
 		`
+var GetGamesCount = `
+			SELECT COUNT (*)
+			FROM games
+	`
+var GetDevelopersCount = `
+			SELECT COUNT (*)
+			FROM developers
+	`
+var GetPublishersCount = `
+			SELECT COUNT (*)
+			FROM publishers
+	`

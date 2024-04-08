@@ -85,3 +85,7 @@ type DevPubIn struct {
 type ErrOut struct {
 	Error string `json:"error"`
 }
+
+type Counter struct {
+	Count string `json:"count"`
+}

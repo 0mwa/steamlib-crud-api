@@ -3,11 +3,13 @@ package entity_handler
 import (
 	"TestProject/internal"
 	"TestProject/internal/entity"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"github.com/Pallinder/go-randomdata"
 	"github.com/go-playground/validator/v10"
+	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -17,6 +19,7 @@ import (
 type Publishers struct {
 	Logger    *zap.SugaredLogger
 	Validator *validator.Validate
+	Rds       *redis.Client
 }
 
 func (p Publishers) GetPath() string {
@@ -166,6 +169,8 @@ func (p Publishers) Post(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+		p.Rds.Del(context.Background(), PublishersCounter)
+		p.Logger.Infof("Pub with id: %s added. %s is flushed", id, PublishersCounter)
 	} else {
 		w.WriteHeader(http.StatusConflict)
 		p.Logger.Error(errors.New("409 - No publisher with such id"))
@@ -202,6 +207,8 @@ func (p Publishers) Del(w http.ResponseWriter, r *http.Request) {
 		p.errToJson(w, err)
 		return
 	}
+	p.Rds.Del(context.Background(), PublishersCounter)
+	p.Logger.Infof("Pub with id: %s deleted. %s is flushed", id, PublishersCounter)
 }
 func (p Publishers) Put(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
@@ -254,4 +261,62 @@ func (p Publishers) Put(w http.ResponseWriter, r *http.Request) {
 		p.errToJson(w, err)
 		return
 	}
+}
+
+func (p Publishers) GetCounter(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		p.Logger.Error(MethodError)
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		p.errToJson(w, errors.New(MethodError))
+		return
+	}
+	count := internal.Counter{}
+	var marshaled []byte
+
+	_, err := p.Rds.Get(context.Background(), PublishersCounter).Result()
+	if errors.Is(err, redis.Nil) {
+		db := internal.GetBD()
+		err = db.QueryRow(internal.GetPublishersCount).Scan(&count.Count)
+		p.Logger.Infof("Redis key %s is empty, getting data from DB", PublishersCounter)
+		if err != nil {
+			p.Logger.Error(err)
+			p.errToJson(w, err)
+			return
+		}
+		p.Rds.Append(context.Background(), PublishersCounter, count.Count)
+		marshaled, err = json.Marshal(count)
+		if err != nil {
+			p.Logger.Error(err)
+			p.errToJson(w, err)
+			return
+		}
+		_, err = w.Write(marshaled)
+		if err != nil {
+			p.Logger.Error(err)
+			p.errToJson(w, err)
+			return
+		}
+		return
+	}
+
+	p.Logger.Infof("Redis key %s is found, getting data from Redis", PublishersCounter)
+	count.Count, err = p.Rds.Get(context.Background(), PublishersCounter).Result()
+	if err != nil {
+		p.Logger.Error(err)
+		p.errToJson(w, err)
+		return
+	}
+	marshaled, err = json.Marshal(count)
+	if err != nil {
+		p.Logger.Error(err)
+		p.errToJson(w, err)
+		return
+	}
+	_, err = w.Write(marshaled)
+	if err != nil {
+		p.Logger.Error(err)
+		p.errToJson(w, err)
+		return
+	}
+	return
 }

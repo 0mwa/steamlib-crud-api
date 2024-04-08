@@ -3,10 +3,12 @@ package entity_handler
 import (
 	"TestProject/internal"
 	"TestProject/internal/entity"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"github.com/go-playground/validator/v10"
+	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -16,6 +18,7 @@ import (
 type Games struct {
 	Logger    *zap.SugaredLogger
 	Validator *validator.Validate
+	Rds       *redis.Client
 }
 
 func (g Games) GetPath() string {
@@ -166,6 +169,8 @@ func (g Games) Post(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+		g.Rds.Del(context.Background(), GamesCounter)
+		g.Logger.Infof("Game with id: %s added. %s is flushed", id, GamesCounter)
 	} else {
 		w.WriteHeader(http.StatusConflict)
 		g.Logger.Error(errors.New("409 - No game with such id"))
@@ -202,6 +207,8 @@ func (g Games) Del(w http.ResponseWriter, r *http.Request) {
 		g.errToJson(w, err)
 		return
 	}
+	g.Rds.Del(context.Background(), GamesCounter)
+	g.Logger.Infof("Game with id: %s deleted. %s is flushed", id, GamesCounter)
 }
 func (g Games) Put(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
@@ -254,5 +261,61 @@ func (g Games) Put(w http.ResponseWriter, r *http.Request) {
 		g.errToJson(w, err)
 		return
 	}
+}
 
+func (g Games) GetCounter(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		g.Logger.Error(MethodError)
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		g.errToJson(w, errors.New(MethodError))
+		return
+	}
+	count := internal.Counter{}
+	var marshaled []byte
+	_, err := g.Rds.Get(context.Background(), GamesCounter).Result()
+	if errors.Is(err, redis.Nil) {
+		db := internal.GetBD()
+		err = db.QueryRow(internal.GetGamesCount).Scan(&count.Count)
+		g.Logger.Infof("Redis key %s is empty, getting data from DB", GamesCounter)
+		if err != nil {
+			g.Logger.Error(err)
+			g.errToJson(w, err)
+			return
+		}
+		g.Rds.Append(context.Background(), GamesCounter, count.Count)
+		marshaled, err = json.Marshal(count)
+		if err != nil {
+			g.Logger.Error(err)
+			g.errToJson(w, err)
+			return
+		}
+		_, err = w.Write(marshaled)
+		if err != nil {
+			g.Logger.Error(err)
+			g.errToJson(w, err)
+			return
+		}
+		return
+	}
+
+	g.Logger.Infof("Redis key %s is found, getting data from Redis", GamesCounter)
+	count.Count, err = g.Rds.Get(context.Background(), GamesCounter).Result()
+	if err != nil {
+		g.Logger.Error(err)
+		g.errToJson(w, err)
+		return
+	}
+	marshaled, err = json.Marshal(count)
+	if err != nil {
+		g.Logger.Error(err)
+		g.errToJson(w, err)
+		return
+	}
+	_, err = w.Write(marshaled)
+	if err != nil {
+		g.Logger.Error(err)
+		g.errToJson(w, err)
+		return
+	}
+	return
 }

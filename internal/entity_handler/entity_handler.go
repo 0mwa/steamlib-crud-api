@@ -3,6 +3,9 @@ package entity_handler
 import "net/http"
 
 const MethodError string = "405 - Wrong method"
+const GamesCounter string = "GAMES_COUNTER"
+const DevelopersCounter string = "DEV_COUNTER"
+const PublishersCounter string = "PUB_COUNTER"
 
 type EntityHandler interface {
 	Get(w http.ResponseWriter, r *http.Request)
@@ -11,4 +14,5 @@ type EntityHandler interface {
 	Del(w http.ResponseWriter, r *http.Request)
 	Put(w http.ResponseWriter, r *http.Request)
 	GetPath() string
+	GetCounter(w http.ResponseWriter, r *http.Request)
 }

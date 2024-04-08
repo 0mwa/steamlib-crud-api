@@ -3,11 +3,13 @@ package entity_handler
 import (
 	"TestProject/internal"
 	"TestProject/internal/entity"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"github.com/Pallinder/go-randomdata"
 	"github.com/go-playground/validator/v10"
+	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -17,6 +19,7 @@ import (
 type Developers struct {
 	Logger    *zap.SugaredLogger
 	Validator *validator.Validate
+	Rds       *redis.Client
 }
 
 func (d Developers) GetPath() string {
@@ -165,6 +168,8 @@ func (d Developers) Post(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+		d.Rds.Del(context.Background(), DevelopersCounter)
+		d.Logger.Infof("Dev with id: %s added. %s is flushed", id, DevelopersCounter)
 	} else {
 		w.WriteHeader(http.StatusConflict)
 		d.Logger.Error(errors.New("409 - No developer with such id"))
@@ -201,6 +206,8 @@ func (d Developers) Del(w http.ResponseWriter, r *http.Request) {
 		d.errToJson(w, err)
 		return
 	}
+	d.Rds.Del(context.Background(), DevelopersCounter)
+	d.Logger.Infof("Dev with id: %s deleted. %s is flushed", id, DevelopersCounter)
 }
 func (d Developers) Put(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
@@ -253,4 +260,62 @@ func (d Developers) Put(w http.ResponseWriter, r *http.Request) {
 		d.errToJson(w, err)
 		return
 	}
+}
+
+func (d Developers) GetCounter(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		d.Logger.Error(MethodError)
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		d.errToJson(w, errors.New(MethodError))
+		return
+	}
+	count := internal.Counter{}
+	var marshaled []byte
+
+	_, err := d.Rds.Get(context.Background(), DevelopersCounter).Result()
+	if errors.Is(err, redis.Nil) {
+		db := internal.GetBD()
+		err = db.QueryRow(internal.GetDevelopersCount).Scan(&count.Count)
+		d.Logger.Infof("Redis key %s is empty, getting data from DB", DevelopersCounter)
+		if err != nil {
+			d.Logger.Error(err)
+			d.errToJson(w, err)
+			return
+		}
+		d.Rds.Append(context.Background(), DevelopersCounter, count.Count)
+		marshaled, err = json.Marshal(count)
+		if err != nil {
+			d.Logger.Error(err)
+			d.errToJson(w, err)
+			return
+		}
+		_, err = w.Write(marshaled)
+		if err != nil {
+			d.Logger.Error(err)
+			d.errToJson(w, err)
+			return
+		}
+		return
+	}
+
+	d.Logger.Infof("Redis key %s is found, getting data from Redis", DevelopersCounter)
+	count.Count, err = d.Rds.Get(context.Background(), DevelopersCounter).Result()
+	if err != nil {
+		d.Logger.Error(err)
+		d.errToJson(w, err)
+		return
+	}
+	marshaled, err = json.Marshal(count)
+	if err != nil {
+		d.Logger.Error(err)
+		d.errToJson(w, err)
+		return
+	}
+	_, err = w.Write(marshaled)
+	if err != nil {
+		d.Logger.Error(err)
+		d.errToJson(w, err)
+		return
+	}
+	return
 }
