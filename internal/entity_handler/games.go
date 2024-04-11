@@ -41,9 +41,9 @@ func (g Games) errToJson(w http.ResponseWriter, externalError error) {
 
 func (g Games) Get(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		g.Logger.Error(MethodError)
+		g.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		g.errToJson(w, errors.New(MethodError))
+		g.errToJson(w, errors.New(internal.MethodError))
 		return
 	}
 
@@ -81,9 +81,9 @@ func (g Games) Get(w http.ResponseWriter, r *http.Request) {
 }
 func (g Games) GetAll(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		g.Logger.Error(MethodError)
+		g.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		g.errToJson(w, errors.New(MethodError))
+		g.errToJson(w, errors.New(internal.MethodError))
 		return
 	}
 
@@ -125,9 +125,9 @@ func (g Games) GetAll(w http.ResponseWriter, r *http.Request) {
 }
 func (g Games) Post(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		g.Logger.Error(MethodError)
+		g.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		g.errToJson(w, errors.New(MethodError))
+		g.errToJson(w, errors.New(internal.MethodError))
 		return
 	}
 
@@ -179,9 +179,9 @@ func (g Games) Post(w http.ResponseWriter, r *http.Request) {
 }
 func (g Games) Del(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
-		g.Logger.Error(MethodError)
+		g.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		g.errToJson(w, errors.New(MethodError))
+		g.errToJson(w, errors.New(internal.MethodError))
 		return
 	}
 
@@ -212,9 +212,9 @@ func (g Games) Del(w http.ResponseWriter, r *http.Request) {
 }
 func (g Games) Put(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
-		g.Logger.Error(MethodError)
+		g.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		g.errToJson(w, errors.New(MethodError))
+		g.errToJson(w, errors.New(internal.MethodError))
 		return
 	}
 
@@ -265,9 +265,9 @@ func (g Games) Put(w http.ResponseWriter, r *http.Request) {
 
 func (g Games) GetCounter(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		g.Logger.Error(MethodError)
+		g.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		g.errToJson(w, errors.New(MethodError))
+		g.errToJson(w, errors.New(internal.MethodError))
 		return
 	}
 	count := internal.Counter{}

@@ -8,7 +8,9 @@ import (
 
 var db *sql.DB
 
-// API json err responde
+const MethodError string = "405 - Wrong method"
+
+// API json err response
 
 func GetBD() *sql.DB {
 	file := "postgres://postgres:omw@localhost:5432/postgres?sslmode=disable"

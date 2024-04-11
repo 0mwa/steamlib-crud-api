@@ -2,7 +2,6 @@ package entity_handler
 
 import "net/http"
 
-const MethodError string = "405 - Wrong method"
 const GamesCounter string = "GAMES_COUNTER"
 const DevelopersCounter string = "DEV_COUNTER"
 const PublishersCounter string = "PUB_COUNTER"

@@ -41,9 +41,9 @@ func (d Developers) errToJson(w http.ResponseWriter, externalError error) {
 }
 func (d Developers) Get(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		d.Logger.Error(MethodError)
+		d.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		d.errToJson(w, errors.New(MethodError))
+		d.errToJson(w, errors.New(internal.MethodError))
 		return
 	}
 	var err error
@@ -81,9 +81,9 @@ func (d Developers) Get(w http.ResponseWriter, r *http.Request) {
 }
 func (d Developers) GetAll(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		d.Logger.Error(MethodError)
+		d.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		d.errToJson(w, errors.New(MethodError))
+		d.errToJson(w, errors.New(internal.MethodError))
 		return
 	}
 
@@ -124,9 +124,9 @@ func (d Developers) GetAll(w http.ResponseWriter, r *http.Request) {
 }
 func (d Developers) Post(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		d.Logger.Error(MethodError)
+		d.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		d.errToJson(w, errors.New(MethodError))
+		d.errToJson(w, errors.New(internal.MethodError))
 		return
 	}
 
@@ -178,9 +178,9 @@ func (d Developers) Post(w http.ResponseWriter, r *http.Request) {
 }
 func (d Developers) Del(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
-		d.Logger.Error(MethodError)
+		d.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		d.errToJson(w, errors.New(MethodError))
+		d.errToJson(w, errors.New(internal.MethodError))
 		return
 	}
 
@@ -211,9 +211,9 @@ func (d Developers) Del(w http.ResponseWriter, r *http.Request) {
 }
 func (d Developers) Put(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
-		d.Logger.Error(MethodError)
+		d.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		d.errToJson(w, errors.New(MethodError))
+		d.errToJson(w, errors.New(internal.MethodError))
 		return
 	}
 
@@ -264,9 +264,9 @@ func (d Developers) Put(w http.ResponseWriter, r *http.Request) {
 
 func (d Developers) GetCounter(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		d.Logger.Error(MethodError)
+		d.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		d.errToJson(w, errors.New(MethodError))
+		d.errToJson(w, errors.New(internal.MethodError))
 		return
 	}
 	count := internal.Counter{}
