@@ -4,6 +4,7 @@ import (
 	"TestProject/internal"
 	"TestProject/internal/entity_handler"
 	"TestProject/internal/repository"
+	"TestProject/internal/service"
 	"github.com/go-playground/validator/v10"
 	"github.com/go-redis/redis/v8"
 	_ "golang.org/x/net/html"
@@ -25,8 +26,10 @@ func main() {
 	usersRepoStruct := repository.NewUsers(db)
 	sessionsRepoStruct := repository.NewSessions(db)
 	errToJson := internal.NewErrToJson(logger)
-	authStruct := internal.Auth{usersRepoStruct, sessionsRepoStruct, logger, errToJson}
+	authService := service.NewAuthService(usersRepoStruct, sessionsRepoStruct, logger)
+	authStruct := internal.Auth{usersRepoStruct, sessionsRepoStruct, authService, logger, errToJson}
 	http.HandleFunc("/auth", authStruct.Auth)
+	http.HandleFunc("/register", authStruct.CreateUser)
 
 	entityHandlers := []entity_handler.EntityHandler{
 		entity_handler.Games{logger, validate, rdb, errToJson},

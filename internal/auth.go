@@ -2,22 +2,21 @@ package internal
 
 import (
 	"TestProject/internal/repository"
+	"TestProject/internal/service"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Pallinder/go-randomdata"
 	"go.uber.org/zap"
 	"io"
-	"math/rand"
 	"net/http"
-	"strconv"
 )
 
 type Auth struct {
-	UsersRepo *repository.Users
-	SessRepo  *repository.Sessions
-	Logger    *zap.SugaredLogger
-	ErrTo     *ErrToJson
+	UsersRepo   *repository.Users
+	SessRepo    *repository.Sessions
+	AuthService *service.Auth
+	Logger      *zap.SugaredLogger
+	ErrTo       *ErrToJson
 }
 
 type reqBody struct {
@@ -35,6 +34,7 @@ func (a Auth) Auth(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 	var requestBody []byte
+	var token string
 	req := reqBody{}
 	requestBody, err = io.ReadAll(r.Body)
 	err = json.Unmarshal(requestBody, &req)
@@ -43,48 +43,57 @@ func (a Auth) Auth(w http.ResponseWriter, r *http.Request) {
 		a.ErrTo.ErrToJson(w, err)
 		return
 	}
-	userId, err := a.UsersRepo.CheckUser(req.Login, req.Passwd)
+
+	token, err = a.AuthService.Auth(req.Login, req.Passwd)
 	if err != nil {
 		a.Logger.Error(err)
 		a.ErrTo.ErrToJson(w, err)
 		return
 	}
-	if userId != 0 {
-		var token string
-		token, err = a.SessRepo.CheckSessionExp(userId)
-		if err != nil {
-			errstr := err.Error()
-			if errstr == "no token" {
-				token = strconv.Itoa(userId+rand.Int()) + randomdata.FirstName(randomdata.RandomGender)
-				err = a.SessRepo.AddSession(userId, token)
-				if err != nil {
-					a.Logger.Error(err)
-					a.ErrTo.ErrToJson(w, err)
-					return
-				}
-				_, err = w.Write([]byte(fmt.Sprintf(`{"msg":"New token given.","token":"%s"}`, token)))
-				if err != nil {
-					a.Logger.Error(err)
-					a.ErrTo.ErrToJson(w, err)
-					return
-				}
-				a.Logger.Infof("New token given to user with id %v. Case %v.", userId, errstr)
-				return
-			}
-			a.Logger.Error(err)
-			a.ErrTo.ErrToJson(w, err)
-			return
-		}
-
-		_, err = w.Write([]byte(fmt.Sprintf(`{"msg":"Token up to date.","token":"%s"}`, token)))
-		if err != nil {
-			a.Logger.Error(err)
-			a.ErrTo.ErrToJson(w, err)
-			return
-		}
-		a.Logger.Infof("%v User's token up to date.", userId)
+	_, err = w.Write([]byte(fmt.Sprintf(`{"msg":"Success","token":"%s"}`, token)))
+	if err != nil {
+		a.Logger.Error(err)
+		a.ErrTo.ErrToJson(w, err)
 		return
 	}
-	a.Logger.Info("Authentication failed.")
-	a.ErrTo.ErrToJson(w, errors.New("Authentication failed."))
+	a.Logger.Infof("Token given to user.")
+	if token == "" {
+		a.Logger.Warn("Authentication failed")
+		a.ErrTo.ErrToJson(w, errors.New("Authentication failed"))
+		return
+	}
 }
+
+func (a Auth) CreateUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		a.Logger.Error(MethodError)
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		a.ErrTo.ErrToJson(w, errors.New(MethodError))
+		return
+	}
+	var err error
+	var requestBody []byte
+	req := reqBody{}
+	requestBody, err = io.ReadAll(r.Body)
+	err = json.Unmarshal(requestBody, &req)
+	if err != nil {
+		a.Logger.Error(err)
+		a.ErrTo.ErrToJson(w, err)
+		return
+	}
+	err = a.AuthService.CreateUser(req.Login, req.Passwd)
+	if err != nil {
+		if errors.Is(err, service.ErrUserExists) {
+			a.Logger.Warn(err)
+			_, err = w.Write([]byte(`{"msg":"User with this login already exists"}`))
+			return
+		}
+		a.Logger.Error(err)
+		a.ErrTo.ErrToJson(w, err)
+		return
+	}
+	a.Logger.Info("User created with long %v", req.Login)
+	_, err = w.Write([]byte(`{"msg":"Registration success"}`))
+}
+
+// ToDo убрать точки в ответах и логере передвинуть логер в начало структуры
