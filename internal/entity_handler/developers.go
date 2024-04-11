@@ -20,30 +20,18 @@ type Developers struct {
 	Logger    *zap.SugaredLogger
 	Validator *validator.Validate
 	Rds       *redis.Client
+	ErrTo     *internal.ErrToJson
 }
 
 func (d Developers) GetPath() string {
 	return "developers"
 }
 
-func (d Developers) errToJson(w http.ResponseWriter, externalError error) {
-	errrr := internal.ErrOut{externalError.Error()}
-	marshaled, err := json.Marshal(errrr)
-	if err != nil {
-		d.Logger.Error(err)
-		return
-	}
-	_, err = w.Write(marshaled)
-	if err != nil {
-		d.Logger.Error(err)
-		return
-	}
-}
 func (d Developers) Get(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		d.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		d.errToJson(w, errors.New(internal.MethodError))
+		d.ErrTo.ErrToJson(w, errors.New(internal.MethodError))
 		return
 	}
 	var err error
@@ -55,7 +43,7 @@ func (d Developers) Get(w http.ResponseWriter, r *http.Request) {
 	result, err = db.Query(internal.SelectDeveloperById, id)
 	if err != nil {
 		d.Logger.Error(err)
-		d.errToJson(w, err)
+		d.ErrTo.ErrToJson(w, err)
 		return
 	}
 	dev := entity.Developer{}
@@ -63,19 +51,19 @@ func (d Developers) Get(w http.ResponseWriter, r *http.Request) {
 	err = result.Scan(&dev.Name, &dev.Country, &dev.SteamId)
 	if err != nil {
 		d.Logger.Error(err)
-		d.errToJson(w, err)
+		d.ErrTo.ErrToJson(w, err)
 		return
 	}
 	marshaled, err = json.Marshal(dev)
 	if err != nil {
 		d.Logger.Error(err)
-		d.errToJson(w, err)
+		d.ErrTo.ErrToJson(w, err)
 		return
 	}
 	_, err = w.Write(marshaled)
 	if err != nil {
 		d.Logger.Error(err)
-		d.errToJson(w, err)
+		d.ErrTo.ErrToJson(w, err)
 		return
 	}
 }
@@ -83,7 +71,7 @@ func (d Developers) GetAll(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		d.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		d.errToJson(w, errors.New(internal.MethodError))
+		d.ErrTo.ErrToJson(w, errors.New(internal.MethodError))
 		return
 	}
 
@@ -95,7 +83,7 @@ func (d Developers) GetAll(w http.ResponseWriter, r *http.Request) {
 	result, err = db.Query(internal.SelectDevelopers)
 	if err != nil {
 		d.Logger.Error(err)
-		d.errToJson(w, err)
+		d.ErrTo.ErrToJson(w, err)
 		return
 	}
 	devs := make([]entity.Developer, 0)
@@ -104,7 +92,7 @@ func (d Developers) GetAll(w http.ResponseWriter, r *http.Request) {
 		err = result.Scan(&dev.Name, &dev.Country, &dev.SteamId)
 		if err != nil {
 			d.Logger.Error(err)
-			d.errToJson(w, err)
+			d.ErrTo.ErrToJson(w, err)
 			return
 		}
 		devs = append(devs, dev)
@@ -112,13 +100,13 @@ func (d Developers) GetAll(w http.ResponseWriter, r *http.Request) {
 	marshaled, err = json.Marshal(devs)
 	if err != nil {
 		d.Logger.Error(err)
-		d.errToJson(w, err)
+		d.ErrTo.ErrToJson(w, err)
 		return
 	}
 	_, err = w.Write(marshaled)
 	if err != nil {
 		d.Logger.Error(err)
-		d.errToJson(w, err)
+		d.ErrTo.ErrToJson(w, err)
 		return
 	}
 }
@@ -126,7 +114,7 @@ func (d Developers) Post(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		d.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		d.errToJson(w, errors.New(internal.MethodError))
+		d.ErrTo.ErrToJson(w, errors.New(internal.MethodError))
 		return
 	}
 
@@ -137,19 +125,19 @@ func (d Developers) Post(w http.ResponseWriter, r *http.Request) {
 	get, err := http.Get("https://store.steampowered.com/api/appdetails?appids=" + id)
 	if err != nil {
 		d.Logger.Error(err)
-		d.errToJson(w, err)
+		d.ErrTo.ErrToJson(w, err)
 		return
 	}
 	readall, err := io.ReadAll(get.Body)
 	if err != nil {
 		d.Logger.Error(err)
-		d.errToJson(w, err)
+		d.ErrTo.ErrToJson(w, err)
 		return
 	}
 	err = json.Unmarshal(readall, response)
 	if err != nil {
 		d.Logger.Error(err)
-		d.errToJson(w, err)
+		d.ErrTo.ErrToJson(w, err)
 		return
 	}
 	devNameArr := response.GameList[id].Data.Publishers
@@ -161,10 +149,10 @@ func (d Developers) Post(w http.ResponseWriter, r *http.Request) {
 			if strings.Contains(err.Error(), "\"devsteam_id_unique\"") {
 				w.WriteHeader(http.StatusConflict)
 				d.Logger.Error(errors.New("409 - Developer already exists"))
-				d.errToJson(w, errors.New("409 - Developer already exists"))
+				d.ErrTo.ErrToJson(w, errors.New("409 - Developer already exists"))
 			} else {
 				d.Logger.Error(err)
-				d.errToJson(w, err)
+				d.ErrTo.ErrToJson(w, err)
 				return
 			}
 		}
@@ -173,14 +161,14 @@ func (d Developers) Post(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusConflict)
 		d.Logger.Error(errors.New("409 - No developer with such id"))
-		d.errToJson(w, errors.New("409 - No developer with such id"))
+		d.ErrTo.ErrToJson(w, errors.New("409 - No developer with such id"))
 	}
 }
 func (d Developers) Del(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		d.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		d.errToJson(w, errors.New(internal.MethodError))
+		d.ErrTo.ErrToJson(w, errors.New(internal.MethodError))
 		return
 	}
 
@@ -192,18 +180,18 @@ func (d Developers) Del(w http.ResponseWriter, r *http.Request) {
 	response, err = db.Query(internal.SelectDeveloperById, id)
 	if err != nil {
 		d.Logger.Error(err)
-		d.errToJson(w, err)
+		d.ErrTo.ErrToJson(w, err)
 		return
 	}
 	if !response.Next() {
 		d.Logger.Error(errors.New("409 - no developer to delete with such id"))
-		d.errToJson(w, errors.New("409 - no developer to delete with such id"))
+		d.ErrTo.ErrToJson(w, errors.New("409 - no developer to delete with such id"))
 		return
 	}
 	_, err = db.Query(internal.DeleteDeveloperById, id)
 	if err != nil {
 		d.Logger.Error(err)
-		d.errToJson(w, err)
+		d.ErrTo.ErrToJson(w, err)
 		return
 	}
 	d.Rds.Del(context.Background(), DevelopersCounter)
@@ -213,7 +201,7 @@ func (d Developers) Put(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		d.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		d.errToJson(w, errors.New(internal.MethodError))
+		d.ErrTo.ErrToJson(w, errors.New(internal.MethodError))
 		return
 	}
 
@@ -225,19 +213,19 @@ func (d Developers) Put(w http.ResponseWriter, r *http.Request) {
 	requestBody, err = io.ReadAll(r.Body)
 	if err != nil {
 		d.Logger.Error(err)
-		d.errToJson(w, err)
+		d.ErrTo.ErrToJson(w, err)
 		return
 	}
 	err = json.Unmarshal(requestBody, &devStruct)
 	if err != nil {
 		d.Logger.Error(err)
-		d.errToJson(w, err)
+		d.ErrTo.ErrToJson(w, err)
 		return
 	}
 
 	if err = d.Validator.Struct(&devStruct); err != nil {
 		d.Logger.Error(err)
-		d.errToJson(w, err)
+		d.ErrTo.ErrToJson(w, err)
 		return
 	}
 
@@ -246,18 +234,18 @@ func (d Developers) Put(w http.ResponseWriter, r *http.Request) {
 	response, err = db.Query(internal.SelectDeveloperById, id)
 	if err != nil {
 		d.Logger.Error(err)
-		d.errToJson(w, err)
+		d.ErrTo.ErrToJson(w, err)
 		return
 	}
 	if !response.Next() {
 		d.Logger.Error(errors.New("409 - no developer to update with such id"))
-		d.errToJson(w, errors.New("409 - no developer to update with such id"))
+		d.ErrTo.ErrToJson(w, errors.New("409 - no developer to update with such id"))
 		return
 	}
 	_, err = db.Query(internal.UpdatePublisherById, devStruct.Name, devStruct.Country, id)
 	if err != nil {
 		d.Logger.Error(err)
-		d.errToJson(w, err)
+		d.ErrTo.ErrToJson(w, err)
 		return
 	}
 }
@@ -266,7 +254,7 @@ func (d Developers) GetCounter(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		d.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		d.errToJson(w, errors.New(internal.MethodError))
+		d.ErrTo.ErrToJson(w, errors.New(internal.MethodError))
 		return
 	}
 	count := internal.Counter{}
@@ -279,20 +267,20 @@ func (d Developers) GetCounter(w http.ResponseWriter, r *http.Request) {
 		d.Logger.Infof("Redis key %s is empty, getting data from DB", DevelopersCounter)
 		if err != nil {
 			d.Logger.Error(err)
-			d.errToJson(w, err)
+			d.ErrTo.ErrToJson(w, err)
 			return
 		}
 		d.Rds.Append(context.Background(), DevelopersCounter, count.Count)
 		marshaled, err = json.Marshal(count)
 		if err != nil {
 			d.Logger.Error(err)
-			d.errToJson(w, err)
+			d.ErrTo.ErrToJson(w, err)
 			return
 		}
 		_, err = w.Write(marshaled)
 		if err != nil {
 			d.Logger.Error(err)
-			d.errToJson(w, err)
+			d.ErrTo.ErrToJson(w, err)
 			return
 		}
 		return
@@ -302,13 +290,13 @@ func (d Developers) GetCounter(w http.ResponseWriter, r *http.Request) {
 	marshaled, err = json.Marshal(count)
 	if err != nil {
 		d.Logger.Error(err)
-		d.errToJson(w, err)
+		d.ErrTo.ErrToJson(w, err)
 		return
 	}
 	_, err = w.Write(marshaled)
 	if err != nil {
 		d.Logger.Error(err)
-		d.errToJson(w, err)
+		d.ErrTo.ErrToJson(w, err)
 		return
 	}
 	return

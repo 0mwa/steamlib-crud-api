@@ -20,31 +20,18 @@ type Publishers struct {
 	Logger    *zap.SugaredLogger
 	Validator *validator.Validate
 	Rds       *redis.Client
+	ErrTo     *internal.ErrToJson
 }
 
 func (p Publishers) GetPath() string {
 	return "publishers"
 }
 
-func (p Publishers) errToJson(w http.ResponseWriter, externalError error) {
-	errrr := internal.ErrOut{externalError.Error()}
-	marshaled, err := json.Marshal(errrr)
-	if err != nil {
-		p.Logger.Error(err)
-		return
-	}
-	_, err = w.Write(marshaled)
-	if err != nil {
-		p.Logger.Error(err)
-		return
-	}
-}
-
 func (p Publishers) Get(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		p.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		p.errToJson(w, errors.New(internal.MethodError))
+		p.ErrTo.ErrToJson(w, errors.New(internal.MethodError))
 		return
 	}
 	var err error
@@ -56,7 +43,7 @@ func (p Publishers) Get(w http.ResponseWriter, r *http.Request) {
 	result, err = db.Query(internal.SelectPublisherById, id)
 	if err != nil {
 		p.Logger.Error(err)
-		p.errToJson(w, err)
+		p.ErrTo.ErrToJson(w, err)
 		return
 	}
 	pub := entity.Publisher{}
@@ -64,19 +51,19 @@ func (p Publishers) Get(w http.ResponseWriter, r *http.Request) {
 	err = result.Scan(&pub.Name, &pub.Country, &pub.SteamId)
 	if err != nil {
 		p.Logger.Error(err)
-		p.errToJson(w, err)
+		p.ErrTo.ErrToJson(w, err)
 		return
 	}
 	marshaled, err = json.Marshal(pub)
 	if err != nil {
 		p.Logger.Error(err)
-		p.errToJson(w, err)
+		p.ErrTo.ErrToJson(w, err)
 		return
 	}
 	_, err = w.Write(marshaled)
 	if err != nil {
 		p.Logger.Error(err)
-		p.errToJson(w, err)
+		p.ErrTo.ErrToJson(w, err)
 		return
 	}
 }
@@ -84,7 +71,7 @@ func (p Publishers) GetAll(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		p.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		p.errToJson(w, errors.New(internal.MethodError))
+		p.ErrTo.ErrToJson(w, errors.New(internal.MethodError))
 		return
 	}
 
@@ -96,7 +83,7 @@ func (p Publishers) GetAll(w http.ResponseWriter, r *http.Request) {
 	result, err = db.Query(internal.SelectPublishers)
 	if err != nil {
 		p.Logger.Error(err)
-		p.errToJson(w, err)
+		p.ErrTo.ErrToJson(w, err)
 		return
 	}
 	pubs := make([]entity.Publisher, 0)
@@ -105,7 +92,7 @@ func (p Publishers) GetAll(w http.ResponseWriter, r *http.Request) {
 		err = result.Scan(&pub.Name, &pub.Country, &pub.SteamId)
 		if err != nil {
 			p.Logger.Error(err)
-			p.errToJson(w, err)
+			p.ErrTo.ErrToJson(w, err)
 			return
 		}
 		pubs = append(pubs, pub)
@@ -113,13 +100,13 @@ func (p Publishers) GetAll(w http.ResponseWriter, r *http.Request) {
 	marshaled, err = json.Marshal(pubs)
 	if err != nil {
 		p.Logger.Error(err)
-		p.errToJson(w, err)
+		p.ErrTo.ErrToJson(w, err)
 		return
 	}
 	_, err = w.Write(marshaled)
 	if err != nil {
 		p.Logger.Error(err)
-		p.errToJson(w, err)
+		p.ErrTo.ErrToJson(w, err)
 		return
 	}
 }
@@ -127,7 +114,7 @@ func (p Publishers) Post(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		p.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		p.errToJson(w, errors.New(internal.MethodError))
+		p.ErrTo.ErrToJson(w, errors.New(internal.MethodError))
 		return
 	}
 
@@ -138,19 +125,19 @@ func (p Publishers) Post(w http.ResponseWriter, r *http.Request) {
 	get, err := http.Get("https://store.steampowered.com/api/appdetails?appids=" + id)
 	if err != nil {
 		p.Logger.Error(err)
-		p.errToJson(w, err)
+		p.ErrTo.ErrToJson(w, err)
 		return
 	}
 	readall, err := io.ReadAll(get.Body)
 	if err != nil {
 		p.Logger.Error(err)
-		p.errToJson(w, err)
+		p.ErrTo.ErrToJson(w, err)
 		return
 	}
 	err = json.Unmarshal(readall, response)
 	if err != nil {
 		p.Logger.Error(err)
-		p.errToJson(w, err)
+		p.ErrTo.ErrToJson(w, err)
 		return
 	}
 	pubNameArr := response.GameList[id].Data.Publishers
@@ -162,10 +149,10 @@ func (p Publishers) Post(w http.ResponseWriter, r *http.Request) {
 			if strings.Contains(err.Error(), "\"pubsteam_id_unique\"") {
 				w.WriteHeader(http.StatusConflict)
 				p.Logger.Error(errors.New("409 - Publisher already exists"))
-				p.errToJson(w, errors.New("409 - Publisher already exists"))
+				p.ErrTo.ErrToJson(w, errors.New("409 - Publisher already exists"))
 			} else {
 				p.Logger.Error(err)
-				p.errToJson(w, err)
+				p.ErrTo.ErrToJson(w, err)
 				return
 			}
 		}
@@ -174,14 +161,14 @@ func (p Publishers) Post(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusConflict)
 		p.Logger.Error(errors.New("409 - No publisher with such id"))
-		p.errToJson(w, errors.New("409 - No publisher with such id"))
+		p.ErrTo.ErrToJson(w, errors.New("409 - No publisher with such id"))
 	}
 }
 func (p Publishers) Del(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		p.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		p.errToJson(w, errors.New(internal.MethodError))
+		p.ErrTo.ErrToJson(w, errors.New(internal.MethodError))
 		return
 	}
 
@@ -193,18 +180,18 @@ func (p Publishers) Del(w http.ResponseWriter, r *http.Request) {
 	response, err = db.Query(internal.SelectPublisherById, id)
 	if err != nil {
 		p.Logger.Error(err)
-		p.errToJson(w, err)
+		p.ErrTo.ErrToJson(w, err)
 		return
 	}
 	if !response.Next() {
 		p.Logger.Error(errors.New("409 - no publisher to delete with such id"))
-		p.errToJson(w, errors.New("409 - no publisher to delete with such id"))
+		p.ErrTo.ErrToJson(w, errors.New("409 - no publisher to delete with such id"))
 		return
 	}
 	_, err = db.Query(internal.DeletePublisherById, id)
 	if err != nil {
 		p.Logger.Error(err)
-		p.errToJson(w, err)
+		p.ErrTo.ErrToJson(w, err)
 		return
 	}
 	p.Rds.Del(context.Background(), PublishersCounter)
@@ -214,7 +201,7 @@ func (p Publishers) Put(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		p.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		p.errToJson(w, errors.New(internal.MethodError))
+		p.ErrTo.ErrToJson(w, errors.New(internal.MethodError))
 		return
 	}
 
@@ -226,19 +213,19 @@ func (p Publishers) Put(w http.ResponseWriter, r *http.Request) {
 	requestBody, err = io.ReadAll(r.Body)
 	if err != nil {
 		p.Logger.Error(err)
-		p.errToJson(w, err)
+		p.ErrTo.ErrToJson(w, err)
 		return
 	}
 	err = json.Unmarshal(requestBody, &pubStruct)
 	if err != nil {
 		p.Logger.Error(err)
-		p.errToJson(w, err)
+		p.ErrTo.ErrToJson(w, err)
 		return
 	}
 
 	if err = p.Validator.Struct(&pubStruct); err != nil {
 		p.Logger.Error(err)
-		p.errToJson(w, err)
+		p.ErrTo.ErrToJson(w, err)
 		return
 	}
 
@@ -247,18 +234,18 @@ func (p Publishers) Put(w http.ResponseWriter, r *http.Request) {
 	response, err = db.Query(internal.SelectPublisherById, id)
 	if err != nil {
 		p.Logger.Error(err)
-		p.errToJson(w, err)
+		p.ErrTo.ErrToJson(w, err)
 		return
 	}
 	if !response.Next() {
 		p.Logger.Error(errors.New("409 - no publisher to update with such id"))
-		p.errToJson(w, errors.New("409 - no publisher to update with such id"))
+		p.ErrTo.ErrToJson(w, errors.New("409 - no publisher to update with such id"))
 		return
 	}
 	_, err = db.Query(internal.UpdatePublisherById, pubStruct.Name, pubStruct.Country, id)
 	if err != nil {
 		p.Logger.Error(err)
-		p.errToJson(w, err)
+		p.ErrTo.ErrToJson(w, err)
 		return
 	}
 }
@@ -267,7 +254,7 @@ func (p Publishers) GetCounter(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		p.Logger.Error(internal.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		p.errToJson(w, errors.New(internal.MethodError))
+		p.ErrTo.ErrToJson(w, errors.New(internal.MethodError))
 		return
 	}
 	count := internal.Counter{}
@@ -280,20 +267,20 @@ func (p Publishers) GetCounter(w http.ResponseWriter, r *http.Request) {
 		p.Logger.Infof("Redis key %s is empty, getting data from DB", PublishersCounter)
 		if err != nil {
 			p.Logger.Error(err)
-			p.errToJson(w, err)
+			p.ErrTo.ErrToJson(w, err)
 			return
 		}
 		p.Rds.Append(context.Background(), PublishersCounter, count.Count)
 		marshaled, err = json.Marshal(count)
 		if err != nil {
 			p.Logger.Error(err)
-			p.errToJson(w, err)
+			p.ErrTo.ErrToJson(w, err)
 			return
 		}
 		_, err = w.Write(marshaled)
 		if err != nil {
 			p.Logger.Error(err)
-			p.errToJson(w, err)
+			p.ErrTo.ErrToJson(w, err)
 			return
 		}
 		return
@@ -303,13 +290,13 @@ func (p Publishers) GetCounter(w http.ResponseWriter, r *http.Request) {
 	marshaled, err = json.Marshal(count)
 	if err != nil {
 		p.Logger.Error(err)
-		p.errToJson(w, err)
+		p.ErrTo.ErrToJson(w, err)
 		return
 	}
 	_, err = w.Write(marshaled)
 	if err != nil {
 		p.Logger.Error(err)
-		p.errToJson(w, err)
+		p.ErrTo.ErrToJson(w, err)
 		return
 	}
 	return

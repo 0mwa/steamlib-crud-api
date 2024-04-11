@@ -12,7 +12,6 @@ import (
 )
 
 func main() {
-
 	logger := internal.NewLogger()
 	validate := validator.New(validator.WithRequiredStructEnabled())
 	rdb := redis.NewClient(&redis.Options{
@@ -23,15 +22,16 @@ func main() {
 	defer logger.Sync()
 
 	db := internal.GetBD()
-	usersRepoStruct := repository.Users{db}
-	sessionsRepoStruct := repository.Sessions{db}
-	authStruct := internal.Auth{usersRepoStruct, sessionsRepoStruct, logger}
+	usersRepoStruct := repository.NewUsers(db)
+	sessionsRepoStruct := repository.NewSessions(db)
+	errToJson := internal.NewErrToJson(logger)
+	authStruct := internal.Auth{usersRepoStruct, sessionsRepoStruct, logger, errToJson}
 	http.HandleFunc("/auth", authStruct.Auth)
 
 	entityHandlers := []entity_handler.EntityHandler{
-		entity_handler.Games{logger, validate, rdb},
-		entity_handler.Publishers{logger, validate, rdb},
-		entity_handler.Developers{logger, validate, rdb},
+		entity_handler.Games{logger, validate, rdb, errToJson},
+		entity_handler.Publishers{logger, validate, rdb, errToJson},
+		entity_handler.Developers{logger, validate, rdb, errToJson},
 	}
 	for _, v := range entityHandlers {
 		http.Handle("/"+v.GetPath(), internal.AuthHandler(http.HandlerFunc(v.GetAll), sessionsRepoStruct))

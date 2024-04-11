@@ -17,6 +17,7 @@ type Auth struct {
 	UsersRepo repository.Users
 	SessRepo  repository.Sessions
 	Logger    *zap.SugaredLogger
+	ErrTo     *ErrToJson
 }
 
 type reqBody struct {
@@ -24,25 +25,11 @@ type reqBody struct {
 	Passwd string `json:"passwd"`
 }
 
-func (a Auth) errToJson(w http.ResponseWriter, externalError error) {
-	errrr := ErrOut{externalError.Error()}
-	marshaled, err := json.Marshal(errrr)
-	if err != nil {
-		a.Logger.Error(err)
-		return
-	}
-	_, err = w.Write(marshaled)
-	if err != nil {
-		a.Logger.Error(err)
-		return
-	}
-}
-
 func (a Auth) Auth(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		a.Logger.Error(MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		a.errToJson(w, errors.New(MethodError))
+		a.ErrTo.ErrToJson(w, errors.New(MethodError))
 		return
 	}
 
@@ -53,13 +40,13 @@ func (a Auth) Auth(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(requestBody, &req)
 	if err != nil {
 		a.Logger.Error(err)
-		a.errToJson(w, err)
+		a.ErrTo.ErrToJson(w, err)
 		return
 	}
 	userId, err := a.UsersRepo.CheckUser(req.Login, req.Passwd)
 	if err != nil {
 		a.Logger.Error(err)
-		a.errToJson(w, err)
+		a.ErrTo.ErrToJson(w, err)
 		return
 	}
 	if userId != 0 {
@@ -72,32 +59,32 @@ func (a Auth) Auth(w http.ResponseWriter, r *http.Request) {
 				err = a.SessRepo.AddSession(userId, token)
 				if err != nil {
 					a.Logger.Error(err)
-					a.errToJson(w, err)
+					a.ErrTo.ErrToJson(w, err)
 					return
 				}
 				_, err = w.Write([]byte(fmt.Sprintf(`{"msg":"New token given.","token":"%s"}`, token)))
 				if err != nil {
 					a.Logger.Error(err)
-					a.errToJson(w, err)
+					a.ErrTo.ErrToJson(w, err)
 					return
 				}
 				a.Logger.Infof("New token given to user with id %v. Case %v.", userId, errstr)
 				return
 			}
 			a.Logger.Error(err)
-			a.errToJson(w, err)
+			a.ErrTo.ErrToJson(w, err)
 			return
 		}
 
 		_, err = w.Write([]byte(fmt.Sprintf(`{"msg":"Token up to date.","token":"%s"}`, token)))
 		if err != nil {
 			a.Logger.Error(err)
-			a.errToJson(w, err)
+			a.ErrTo.ErrToJson(w, err)
 			return
 		}
 		a.Logger.Infof("%v User's token up to date.", userId)
 		return
 	}
 	a.Logger.Info("Authentication failed.")
-	a.errToJson(w, errors.New("Authentication failed."))
+	a.ErrTo.ErrToJson(w, errors.New("Authentication failed."))
 }
