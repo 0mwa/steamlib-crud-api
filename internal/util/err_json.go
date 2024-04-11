@@ -1,4 +1,4 @@
-package internal
+package util
 
 import (
 	"encoding/json"
@@ -8,6 +8,9 @@ import (
 
 type ErrToJson struct {
 	logger *zap.SugaredLogger
+}
+type ErrOut struct {
+	Error string `json:"error"`
 }
 
 func NewErrToJson(l *zap.SugaredLogger) *ErrToJson {

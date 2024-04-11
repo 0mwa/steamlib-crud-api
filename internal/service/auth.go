@@ -14,13 +14,13 @@ import (
 var ErrUserExists = errors.New("User already exists")
 
 type Auth struct {
+	Logger    *zap.SugaredLogger
 	UsersRepo *repository.Users
 	SessRepo  *repository.Sessions
-	Logger    *zap.SugaredLogger
 }
 
 func NewAuthService(u *repository.Users, s *repository.Sessions, l *zap.SugaredLogger) *Auth {
-	return &Auth{u, s, l}
+	return &Auth{l, u, s}
 }
 
 func (a Auth) Auth(login string, passwd string) (string, error) {

@@ -1,4 +1,4 @@
-package internal
+package middleware
 
 import (
 	"TestProject/internal/repository"

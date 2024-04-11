@@ -1,8 +1,10 @@
 package entity_handler
 
 import (
-	"TestProject/internal"
 	"TestProject/internal/entity"
+	"TestProject/internal/handler"
+	"TestProject/internal/repository"
+	"TestProject/internal/util"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -20,7 +22,8 @@ type Developers struct {
 	Logger    *zap.SugaredLogger
 	Validator *validator.Validate
 	Rds       *redis.Client
-	ErrTo     *internal.ErrToJson
+	ErrTo     *util.ErrToJson
+	Db        *sql.DB
 }
 
 func (d Developers) GetPath() string {
@@ -29,9 +32,9 @@ func (d Developers) GetPath() string {
 
 func (d Developers) Get(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		d.Logger.Error(internal.MethodError)
+		d.Logger.Error(handler.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		d.ErrTo.ErrToJson(w, errors.New(internal.MethodError))
+		d.ErrTo.ErrToJson(w, errors.New(handler.MethodError))
 		return
 	}
 	var err error
@@ -39,8 +42,7 @@ func (d Developers) Get(w http.ResponseWriter, r *http.Request) {
 	var marshaled []byte
 
 	id := r.PathValue("id")
-	db := internal.GetBD()
-	result, err = db.Query(internal.SelectDeveloperById, id)
+	result, err = d.Db.Query(repository.SelectDeveloperById, id)
 	if err != nil {
 		d.Logger.Error(err)
 		d.ErrTo.ErrToJson(w, err)
@@ -69,9 +71,9 @@ func (d Developers) Get(w http.ResponseWriter, r *http.Request) {
 }
 func (d Developers) GetAll(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		d.Logger.Error(internal.MethodError)
+		d.Logger.Error(handler.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		d.ErrTo.ErrToJson(w, errors.New(internal.MethodError))
+		d.ErrTo.ErrToJson(w, errors.New(handler.MethodError))
 		return
 	}
 
@@ -79,8 +81,7 @@ func (d Developers) GetAll(w http.ResponseWriter, r *http.Request) {
 	var result *sql.Rows
 	var err error
 
-	db := internal.GetBD()
-	result, err = db.Query(internal.SelectDevelopers)
+	result, err = d.Db.Query(repository.SelectDevelopers)
 	if err != nil {
 		d.Logger.Error(err)
 		d.ErrTo.ErrToJson(w, err)
@@ -112,16 +113,15 @@ func (d Developers) GetAll(w http.ResponseWriter, r *http.Request) {
 }
 func (d Developers) Post(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		d.Logger.Error(internal.MethodError)
+		d.Logger.Error(handler.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		d.ErrTo.ErrToJson(w, errors.New(internal.MethodError))
+		d.ErrTo.ErrToJson(w, errors.New(handler.MethodError))
 		return
 	}
 
-	db := internal.GetBD()
 	id := r.PathValue("id")
-	var response *internal.SteamResponse
-	response = &internal.SteamResponse{GameList: make(map[string]internal.SteamResponseElement)}
+	var response *SteamResponse
+	response = &SteamResponse{GameList: make(map[string]SteamResponseElement)}
 	get, err := http.Get("https://store.steampowered.com/api/appdetails?appids=" + id)
 	if err != nil {
 		d.Logger.Error(err)
@@ -144,7 +144,7 @@ func (d Developers) Post(w http.ResponseWriter, r *http.Request) {
 	devCountry := randomdata.Country(randomdata.FullCountry)
 	if len(devNameArr) > 0 {
 		devName := strings.Join(devNameArr, " ")
-		_, err = db.Query("INSERT INTO developers (name, country, steam_id) VALUES ($1, $2, $3)", devName, devCountry, id)
+		_, err = d.Db.Query("INSERT INTO developers (name, country, steam_id) VALUES ($1, $2, $3)", devName, devCountry, id)
 		if err != nil {
 			if strings.Contains(err.Error(), "\"devsteam_id_unique\"") {
 				w.WriteHeader(http.StatusConflict)
@@ -166,18 +166,17 @@ func (d Developers) Post(w http.ResponseWriter, r *http.Request) {
 }
 func (d Developers) Del(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
-		d.Logger.Error(internal.MethodError)
+		d.Logger.Error(handler.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		d.ErrTo.ErrToJson(w, errors.New(internal.MethodError))
+		d.ErrTo.ErrToJson(w, errors.New(handler.MethodError))
 		return
 	}
 
 	var err error
 	var response *sql.Rows
 
-	db := internal.GetBD()
 	id := r.PathValue("id")
-	response, err = db.Query(internal.SelectDeveloperById, id)
+	response, err = d.Db.Query(repository.SelectDeveloperById, id)
 	if err != nil {
 		d.Logger.Error(err)
 		d.ErrTo.ErrToJson(w, err)
@@ -188,7 +187,7 @@ func (d Developers) Del(w http.ResponseWriter, r *http.Request) {
 		d.ErrTo.ErrToJson(w, errors.New("409 - no developer to delete with such id"))
 		return
 	}
-	_, err = db.Query(internal.DeleteDeveloperById, id)
+	_, err = d.Db.Query(repository.DeleteDeveloperById, id)
 	if err != nil {
 		d.Logger.Error(err)
 		d.ErrTo.ErrToJson(w, err)
@@ -199,9 +198,9 @@ func (d Developers) Del(w http.ResponseWriter, r *http.Request) {
 }
 func (d Developers) Put(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
-		d.Logger.Error(internal.MethodError)
+		d.Logger.Error(handler.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		d.ErrTo.ErrToJson(w, errors.New(internal.MethodError))
+		d.ErrTo.ErrToJson(w, errors.New(handler.MethodError))
 		return
 	}
 
@@ -209,7 +208,7 @@ func (d Developers) Put(w http.ResponseWriter, r *http.Request) {
 	var requestBody []byte
 	var response *sql.Rows
 
-	devStruct := internal.DevPubIn{}
+	devStruct := DevPubIn{}
 	requestBody, err = io.ReadAll(r.Body)
 	if err != nil {
 		d.Logger.Error(err)
@@ -229,9 +228,8 @@ func (d Developers) Put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := internal.GetBD()
 	id := r.PathValue("id")
-	response, err = db.Query(internal.SelectDeveloperById, id)
+	response, err = d.Db.Query(repository.SelectDeveloperById, id)
 	if err != nil {
 		d.Logger.Error(err)
 		d.ErrTo.ErrToJson(w, err)
@@ -242,7 +240,7 @@ func (d Developers) Put(w http.ResponseWriter, r *http.Request) {
 		d.ErrTo.ErrToJson(w, errors.New("409 - no developer to update with such id"))
 		return
 	}
-	_, err = db.Query(internal.UpdatePublisherById, devStruct.Name, devStruct.Country, id)
+	_, err = d.Db.Query(repository.UpdatePublisherById, devStruct.Name, devStruct.Country, id)
 	if err != nil {
 		d.Logger.Error(err)
 		d.ErrTo.ErrToJson(w, err)
@@ -252,18 +250,17 @@ func (d Developers) Put(w http.ResponseWriter, r *http.Request) {
 
 func (d Developers) GetCounter(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		d.Logger.Error(internal.MethodError)
+		d.Logger.Error(handler.MethodError)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		d.ErrTo.ErrToJson(w, errors.New(internal.MethodError))
+		d.ErrTo.ErrToJson(w, errors.New(handler.MethodError))
 		return
 	}
-	count := internal.Counter{}
+	count := Counter{}
 	var marshaled []byte
 	var err error
 	count.Count, err = d.Rds.Get(context.Background(), DevelopersCounter).Result()
 	if errors.Is(err, redis.Nil) {
-		db := internal.GetBD()
-		err = db.QueryRow(internal.GetDevelopersCount).Scan(&count.Count)
+		err = d.Db.QueryRow(repository.GetDevelopersCount).Scan(&count.Count)
 		d.Logger.Infof("Redis key %s is empty, getting data from DB", DevelopersCounter)
 		if err != nil {
 			d.Logger.Error(err)

@@ -1,8 +1,9 @@
-package internal
+package handler
 
 import (
 	"TestProject/internal/repository"
 	"TestProject/internal/service"
+	"TestProject/internal/util"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,11 +13,11 @@ import (
 )
 
 type Auth struct {
+	Logger      *zap.SugaredLogger
 	UsersRepo   *repository.Users
 	SessRepo    *repository.Sessions
 	AuthService *service.Auth
-	Logger      *zap.SugaredLogger
-	ErrTo       *ErrToJson
+	ErrTo       *util.ErrToJson
 }
 
 type reqBody struct {
