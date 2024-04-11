@@ -3,13 +3,17 @@ package repository
 import "database/sql"
 
 type Users struct {
-	Db *sql.DB
+	db *sql.DB
+}
+
+func NewUsers(db *sql.DB) *Users {
+	return &Users{db}
 }
 
 func (u Users) CheckUser(login string, passwd string) (int, error) {
 	var err error
 	var result *sql.Rows
-	result, err = u.Db.Query("SELECT id FROM users WHERE login = $1 AND passwd = $2", login, passwd)
+	result, err = u.db.Query("SELECT id FROM users WHERE login = $1 AND passwd = $2", login, passwd)
 	if err != nil {
 		return 0, err
 	}

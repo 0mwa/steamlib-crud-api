@@ -34,12 +34,12 @@ func main() {
 		entity_handler.Developers{logger, validate, rdb, errToJson},
 	}
 	for _, v := range entityHandlers {
-		http.Handle("/"+v.GetPath(), internal.AuthHandler(http.HandlerFunc(v.GetAll), sessionsRepoStruct))
-		http.Handle("/"+v.GetPath()+"/{id}", internal.AuthHandler(http.HandlerFunc(v.Get), sessionsRepoStruct))
-		http.Handle("/"+v.GetPath()+"/add/{id}", internal.AuthHandler(http.HandlerFunc(v.Post), sessionsRepoStruct))
-		http.Handle("/"+v.GetPath()+"/delete/{id}", internal.AuthHandler(http.HandlerFunc(v.Del), sessionsRepoStruct))
-		http.Handle("/"+v.GetPath()+"/update/{id}", internal.AuthHandler(http.HandlerFunc(v.Put), sessionsRepoStruct))
-		http.Handle("/"+v.GetPath()+"/get_counter", internal.AuthHandler(http.HandlerFunc(v.GetCounter), sessionsRepoStruct))
+		http.Handle("/"+v.GetPath(), internal.AuthHandler(http.HandlerFunc(v.GetAll), *sessionsRepoStruct))
+		http.Handle("/"+v.GetPath()+"/{id}", internal.AuthHandler(http.HandlerFunc(v.Get), *sessionsRepoStruct))
+		http.Handle("/"+v.GetPath()+"/add/{id}", internal.AuthHandler(http.HandlerFunc(v.Post), *sessionsRepoStruct))
+		http.Handle("/"+v.GetPath()+"/delete/{id}", internal.AuthHandler(http.HandlerFunc(v.Del), *sessionsRepoStruct))
+		http.Handle("/"+v.GetPath()+"/update/{id}", internal.AuthHandler(http.HandlerFunc(v.Put), *sessionsRepoStruct))
+		http.Handle("/"+v.GetPath()+"/get_counter", internal.AuthHandler(http.HandlerFunc(v.GetCounter), *sessionsRepoStruct))
 	}
 
 	err := http.ListenAndServe(":3333", nil)

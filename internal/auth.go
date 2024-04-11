@@ -14,8 +14,8 @@ import (
 )
 
 type Auth struct {
-	UsersRepo repository.Users
-	SessRepo  repository.Sessions
+	UsersRepo *repository.Users
+	SessRepo  *repository.Sessions
 	Logger    *zap.SugaredLogger
 	ErrTo     *ErrToJson
 }
