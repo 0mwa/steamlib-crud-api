@@ -8,8 +8,6 @@ type Game struct {
 	Description string
 	Genres      string
 	DeveloperId int
-	Developer   Developer
 	PublisherId int
-	Publisher   Publisher
 	SteamId     int
 }
