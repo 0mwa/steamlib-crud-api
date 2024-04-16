@@ -51,18 +51,18 @@ func (a Auth) Auth(w http.ResponseWriter, r *http.Request) {
 		a.ErrTo.ErrToJson(w, err)
 		return
 	}
+	if token == "" {
+		a.Logger.Warn("Authentication failed")
+		a.ErrTo.ErrToJson(w, errors.New("Authentication failed"))
+		return
+	}
 	_, err = w.Write([]byte(fmt.Sprintf(`{"msg":"Success","token":"%s"}`, token)))
 	if err != nil {
 		a.Logger.Error(err)
 		a.ErrTo.ErrToJson(w, err)
 		return
 	}
-	a.Logger.Infof("Token given to user.")
-	if token == "" {
-		a.Logger.Warn("Authentication failed")
-		a.ErrTo.ErrToJson(w, errors.New("Authentication failed"))
-		return
-	}
+	a.Logger.Infof("Token given to user")
 }
 
 func (a Auth) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -93,8 +93,6 @@ func (a Auth) CreateUser(w http.ResponseWriter, r *http.Request) {
 		a.ErrTo.ErrToJson(w, err)
 		return
 	}
-	a.Logger.Info("User created with long %v", req.Login)
+	a.Logger.Infof("User created with login: %v", req.Login)
 	_, err = w.Write([]byte(`{"msg":"Registration success"}`))
 }
-
-// ToDo убрать точки в ответах и логере передвинуть логер в начало структуры
