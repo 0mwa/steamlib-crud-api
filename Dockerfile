@@ -2,8 +2,11 @@
 # Create layer from golang image
 FROM golang:1.22-alpine as builder
 
+# Set work directory
+WORKDIR /app
+
 # Add files from current directory
-COPY . /app
+COPY . .
 
 # Build app, upgrade, ignore baselayout in final image, install required dependencies
 RUN apk -U upgrade --ignore alpine-baselayout && apk add --no-cache \
