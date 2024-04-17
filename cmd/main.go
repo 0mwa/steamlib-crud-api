@@ -1,12 +1,12 @@
 package main
 
 import (
-	"TestProject/internal/handler"
-	"TestProject/internal/handler/entity_handler"
-	"TestProject/internal/middleware"
-	"TestProject/internal/repository"
-	"TestProject/internal/service"
-	"TestProject/internal/util"
+	"Crud-Api/internal/handler"
+	"Crud-Api/internal/handler/entity_handler"
+	"Crud-Api/internal/middleware"
+	"Crud-Api/internal/repository"
+	"Crud-Api/internal/service"
+	"Crud-Api/internal/util"
 	"github.com/go-playground/validator/v10"
 	_ "golang.org/x/net/html"
 	"net/http"

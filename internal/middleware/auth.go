@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"TestProject/internal/repository"
+	"Crud-Api/internal/repository"
 	"net/http"
 )
 

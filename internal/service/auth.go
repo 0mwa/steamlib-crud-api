@@ -1,7 +1,7 @@
 package service
 
 import (
-	"TestProject/internal/repository"
+	"Crud-Api/internal/repository"
 	"crypto/sha256"
 	"errors"
 	"fmt"

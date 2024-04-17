@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"TestProject/internal/repository"
-	"TestProject/internal/service"
-	"TestProject/internal/util"
+	"Crud-Api/internal/repository"
+	"Crud-Api/internal/service"
+	"Crud-Api/internal/util"
 	"encoding/json"
 	"errors"
 	"fmt"

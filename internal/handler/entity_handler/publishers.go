@@ -1,10 +1,10 @@
 package entity_handler
 
 import (
-	"TestProject/internal/entity"
-	"TestProject/internal/handler"
-	"TestProject/internal/repository"
-	"TestProject/internal/util"
+	"Crud-Api/internal/entity"
+	"Crud-Api/internal/handler"
+	"Crud-Api/internal/repository"
+	"Crud-Api/internal/util"
 	"context"
 	"database/sql"
 	"encoding/json"
