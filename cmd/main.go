@@ -8,7 +8,6 @@ import (
 	"Crud-Api/internal/service"
 	"Crud-Api/internal/util"
 	"github.com/go-playground/validator/v10"
-	_ "golang.org/x/net/html"
 	"net/http"
 )
 
