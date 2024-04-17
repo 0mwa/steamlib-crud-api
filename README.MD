@@ -62,7 +62,7 @@ curl -X POST --data '{"login":"user", "password":"user"}' http://localhost:3333/
 curl -X POST -H "token: 6271879382257613538Matthew" http://localhost:3333/games/add/440
 ```
 ```$xslt
-curl -X POST -H "token: 6271879382257613538Matthew" http://localhost:3333/developres/add/440
+curl -X POST -H "token: 6271879382257613538Matthew" http://localhost:3333/developers/add/440
 ```
 ```$xslt
 curl -X POST -H "token: 6271879382257613538Matthew" http://localhost:3333/publishers/add/440
