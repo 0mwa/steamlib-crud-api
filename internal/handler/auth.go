@@ -87,6 +87,11 @@ func (a Auth) CreateUser(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, service.ErrUserExists) {
 			a.Logger.Warn(err)
 			_, err = w.Write([]byte(`{"msg":"User with this login already exists"}`))
+			if err != nil {
+				a.Logger.Error(err)
+				a.ErrTo.ErrToJson(w, util.ErrSWW)
+				return
+			}
 			return
 		}
 		a.Logger.Error(err)
@@ -95,4 +100,9 @@ func (a Auth) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	a.Logger.Infof("User created with login: %v", req.Login)
 	_, err = w.Write([]byte(`{"msg":"Registration success"}`))
+	if err != nil {
+		a.Logger.Error(err)
+		a.ErrTo.ErrToJson(w, util.ErrSWW)
+		return
+	}
 }
