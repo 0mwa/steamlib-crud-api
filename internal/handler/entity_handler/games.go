@@ -172,6 +172,7 @@ func (g Games) Post(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusConflict)
 				g.Logger.Error(errors.New("409 - Game already exists"))
 				g.ErrTo.ErrToJson(w, errors.New("409 - Game already exists"))
+				return
 			} else {
 				g.Logger.Error(err)
 				g.ErrTo.ErrToJson(w, util.ErrSWW)
@@ -180,6 +181,12 @@ func (g Games) Post(w http.ResponseWriter, r *http.Request) {
 		}
 		g.Rds.Del(context.Background(), GamesCounter)
 		g.Logger.Infof("Game with id: %s added. %s is flushed", id, GamesCounter)
+		_, err = w.Write([]byte(`{"msg":"Success"}`))
+		if err != nil {
+			g.Logger.Error(err)
+			g.ErrTo.ErrToJson(w, util.ErrSWW)
+			return
+		}
 	} else {
 		w.WriteHeader(http.StatusConflict)
 		g.Logger.Error(errors.New("409 - No game with such id"))
@@ -228,6 +235,12 @@ func (g Games) Del(w http.ResponseWriter, r *http.Request) {
 	}
 	g.Rds.Del(context.Background(), GamesCounter)
 	g.Logger.Infof("Game with id: %s deleted. %s is flushed", id, GamesCounter)
+	_, err = w.Write([]byte(`{"msg":"Success"}`))
+	if err != nil {
+		g.Logger.Error(err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
+		return
+	}
 }
 func (g Games) Put(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
@@ -285,6 +298,12 @@ func (g Games) Put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_, err = g.Db.Query(repository.UpdateGameById, gameStruct.Name, gameStruct.Img, gameStruct.Description, gameStruct.Rating, gameStruct.DeveloperId, gameStruct.PublisherId, id)
+	if err != nil {
+		g.Logger.Error(err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
+		return
+	}
+	_, err = w.Write([]byte(`{"msg":"Success"}`))
 	if err != nil {
 		g.Logger.Error(err)
 		g.ErrTo.ErrToJson(w, util.ErrSWW)

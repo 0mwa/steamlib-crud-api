@@ -172,6 +172,7 @@ func (p Publishers) Post(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusConflict)
 				p.Logger.Error(errors.New("409 - Publisher already exists"))
 				p.ErrTo.ErrToJson(w, errors.New("409 - Publisher already exists"))
+				return
 			} else {
 				p.Logger.Error(err)
 				p.ErrTo.ErrToJson(w, util.ErrSWW)
@@ -180,6 +181,12 @@ func (p Publishers) Post(w http.ResponseWriter, r *http.Request) {
 		}
 		p.Rds.Del(context.Background(), PublishersCounter)
 		p.Logger.Infof("Pub with id: %s added. %s is flushed", id, PublishersCounter)
+		_, err = w.Write([]byte(`{"msg":"Success"}`))
+		if err != nil {
+			p.Logger.Error(err)
+			p.ErrTo.ErrToJson(w, util.ErrSWW)
+			return
+		}
 	} else {
 		w.WriteHeader(http.StatusConflict)
 		p.Logger.Error(errors.New("409 - No publisher with such id"))
@@ -228,6 +235,12 @@ func (p Publishers) Del(w http.ResponseWriter, r *http.Request) {
 	}
 	p.Rds.Del(context.Background(), PublishersCounter)
 	p.Logger.Infof("Pub with id: %s deleted. %s is flushed", id, PublishersCounter)
+	_, err = w.Write([]byte(`{"msg":"Success"}`))
+	if err != nil {
+		p.Logger.Error(err)
+		p.ErrTo.ErrToJson(w, util.ErrSWW)
+		return
+	}
 }
 func (p Publishers) Put(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
@@ -285,6 +298,12 @@ func (p Publishers) Put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_, err = p.Db.Query(repository.UpdatePublisherById, pubStruct.Name, pubStruct.Country, id)
+	if err != nil {
+		p.Logger.Error(err)
+		p.ErrTo.ErrToJson(w, util.ErrSWW)
+		return
+	}
+	_, err = w.Write([]byte(`{"msg":"Success"}`))
 	if err != nil {
 		p.Logger.Error(err)
 		p.ErrTo.ErrToJson(w, util.ErrSWW)

@@ -172,6 +172,7 @@ func (d Developers) Post(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusConflict)
 				d.Logger.Error(errors.New("409 - Developer already exists"))
 				d.ErrTo.ErrToJson(w, errors.New("409 - Developer already exists"))
+				return
 			} else {
 				d.Logger.Error(err)
 				d.ErrTo.ErrToJson(w, util.ErrSWW)
@@ -180,6 +181,12 @@ func (d Developers) Post(w http.ResponseWriter, r *http.Request) {
 		}
 		d.Rds.Del(context.Background(), DevelopersCounter)
 		d.Logger.Infof("Dev with id: %s added. %s is flushed", id, DevelopersCounter)
+		_, err = w.Write([]byte(`{"msg":"Success"}`))
+		if err != nil {
+			d.Logger.Error(err)
+			d.ErrTo.ErrToJson(w, util.ErrSWW)
+			return
+		}
 	} else {
 		w.WriteHeader(http.StatusConflict)
 		d.Logger.Error(errors.New("409 - No developer with such id"))
@@ -228,6 +235,12 @@ func (d Developers) Del(w http.ResponseWriter, r *http.Request) {
 	}
 	d.Rds.Del(context.Background(), DevelopersCounter)
 	d.Logger.Infof("Dev with id: %s deleted. %s is flushed", id, DevelopersCounter)
+	_, err = w.Write([]byte(`{"msg":"Success"}`))
+	if err != nil {
+		d.Logger.Error(err)
+		d.ErrTo.ErrToJson(w, util.ErrSWW)
+		return
+	}
 }
 func (d Developers) Put(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
@@ -285,6 +298,12 @@ func (d Developers) Put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_, err = d.Db.Query(repository.UpdatePublisherById, devStruct.Name, devStruct.Country, id)
+	if err != nil {
+		d.Logger.Error(err)
+		d.ErrTo.ErrToJson(w, util.ErrSWW)
+		return
+	}
+	_, err = w.Write([]byte(`{"msg":"Success"}`))
 	if err != nil {
 		d.Logger.Error(err)
 		d.ErrTo.ErrToJson(w, util.ErrSWW)
