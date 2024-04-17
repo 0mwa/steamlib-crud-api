@@ -28,6 +28,7 @@ services:
     ports:
       - "${PG_PORT}:${PG_PORT}"
     environment:
+      POSTGRES_USER: ${PG_USER}
       POSTGRES_PASSWORD: ${PG_PASSWORD}
 
   redis:
