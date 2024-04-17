@@ -1,10 +1,14 @@
 package entity_handler
 
-import "net/http"
+import (
+	"net/http"
+)
 
-const GamesCounter string = "GAMES_COUNTER"
-const DevelopersCounter string = "DEV_COUNTER"
-const PublishersCounter string = "PUB_COUNTER"
+const (
+	GamesCounter      string = "GAMES_COUNTER"
+	DevelopersCounter string = "DEV_COUNTER"
+	PublishersCounter string = "PUB_COUNTER"
+)
 
 type GameIn struct {
 	Name        *string `json:"name" validate:"max=255"`

@@ -27,9 +27,9 @@ type reqBody struct {
 
 func (a Auth) Auth(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		a.Logger.Error(MethodError)
+		a.Logger.Error(util.ErrMethod)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		a.ErrTo.ErrToJson(w, errors.New(MethodError))
+		a.ErrTo.ErrToJson(w, util.ErrMethod)
 		return
 	}
 
@@ -41,14 +41,14 @@ func (a Auth) Auth(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(requestBody, &req)
 	if err != nil {
 		a.Logger.Error(err)
-		a.ErrTo.ErrToJson(w, err)
+		a.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 
 	token, err = a.AuthService.Auth(req.Login, req.Passwd)
 	if err != nil {
 		a.Logger.Error(err)
-		a.ErrTo.ErrToJson(w, err)
+		a.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 	if token == "" {
@@ -59,7 +59,7 @@ func (a Auth) Auth(w http.ResponseWriter, r *http.Request) {
 	_, err = w.Write([]byte(fmt.Sprintf(`{"msg":"Success","token":"%s"}`, token)))
 	if err != nil {
 		a.Logger.Error(err)
-		a.ErrTo.ErrToJson(w, err)
+		a.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 	a.Logger.Infof("Token given to user")
@@ -67,9 +67,9 @@ func (a Auth) Auth(w http.ResponseWriter, r *http.Request) {
 
 func (a Auth) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		a.Logger.Error(MethodError)
+		a.Logger.Error(util.ErrMethod)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		a.ErrTo.ErrToJson(w, errors.New(MethodError))
+		a.ErrTo.ErrToJson(w, util.ErrMethod)
 		return
 	}
 	var err error
@@ -79,7 +79,7 @@ func (a Auth) CreateUser(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(requestBody, &req)
 	if err != nil {
 		a.Logger.Error(err)
-		a.ErrTo.ErrToJson(w, err)
+		a.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 	err = a.AuthService.CreateUser(req.Login, req.Passwd)
@@ -90,7 +90,7 @@ func (a Auth) CreateUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		a.Logger.Error(err)
-		a.ErrTo.ErrToJson(w, err)
+		a.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 	a.Logger.Infof("User created with login: %v", req.Login)

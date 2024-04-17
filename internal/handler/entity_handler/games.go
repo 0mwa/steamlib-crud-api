@@ -2,7 +2,6 @@ package entity_handler
 
 import (
 	"Crud-Api/internal/entity"
-	"Crud-Api/internal/handler"
 	"Crud-Api/internal/repository"
 	"Crud-Api/internal/util"
 	"context"
@@ -14,6 +13,7 @@ import (
 	"go.uber.org/zap"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -31,20 +31,31 @@ func (g Games) GetPath() string {
 
 func (g Games) Get(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		g.Logger.Error(handler.MethodError)
+		g.Logger.Error(util.ErrMethod)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		g.ErrTo.ErrToJson(w, errors.New(handler.MethodError))
+		g.ErrTo.ErrToJson(w, util.ErrMethod)
 		return
 	}
 
 	var err error
 	var result *sql.Rows
 	var marshaled []byte
-	id := r.PathValue("id")
+	idS := r.PathValue("id")
+	id, err := strconv.Atoi(idS)
+	if err != nil {
+		if errors.Is(err, strconv.ErrSyntax) {
+			g.Logger.Error(err)
+			g.ErrTo.ErrToJson(w, util.ErrNI)
+			return
+		}
+		g.Logger.Error(err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
+		return
+	}
 	result, err = g.Db.Query(repository.SelectGameById, id)
 	if err != nil {
 		g.Logger.Error(err)
-		g.ErrTo.ErrToJson(w, err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 	game := entity.Game{}
@@ -52,27 +63,27 @@ func (g Games) Get(w http.ResponseWriter, r *http.Request) {
 	err = result.Scan(&game.Name, &game.Img, &game.Description, &game.Rating, &game.DeveloperId, &game.PublisherId, &game.SteamId)
 	if err != nil {
 		g.Logger.Error(err)
-		g.ErrTo.ErrToJson(w, err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 	marshaled, err = json.Marshal(game)
 	if err != nil {
 		g.Logger.Error(err)
-		g.ErrTo.ErrToJson(w, err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 	_, err = w.Write(marshaled)
 	if err != nil {
 		g.Logger.Error(err)
-		g.ErrTo.ErrToJson(w, err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 }
 func (g Games) GetAll(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		g.Logger.Error(handler.MethodError)
+		g.Logger.Error(util.ErrMethod)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		g.ErrTo.ErrToJson(w, errors.New(handler.MethodError))
+		g.ErrTo.ErrToJson(w, util.ErrMethod)
 		return
 	}
 
@@ -83,7 +94,7 @@ func (g Games) GetAll(w http.ResponseWriter, r *http.Request) {
 	result, err = g.Db.Query(repository.SelectGames)
 	if err != nil {
 		g.Logger.Error(err)
-		g.ErrTo.ErrToJson(w, err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 
@@ -93,7 +104,7 @@ func (g Games) GetAll(w http.ResponseWriter, r *http.Request) {
 		err = result.Scan(&game.Name, &game.Img, &game.Description, &game.Rating, &game.DeveloperId, &game.PublisherId, &game.SteamId)
 		if err != nil {
 			g.Logger.Error(err)
-			g.ErrTo.ErrToJson(w, err)
+			g.ErrTo.ErrToJson(w, util.ErrSWW)
 			return
 		}
 		games = append(games, game)
@@ -101,48 +112,59 @@ func (g Games) GetAll(w http.ResponseWriter, r *http.Request) {
 	marshaled, err = json.Marshal(games)
 	if err != nil {
 		g.Logger.Error(err)
-		g.ErrTo.ErrToJson(w, err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 	_, err = w.Write(marshaled)
 	if err != nil {
 		g.Logger.Error(err)
-		g.ErrTo.ErrToJson(w, err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 }
 func (g Games) Post(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		g.Logger.Error(handler.MethodError)
+		g.Logger.Error(util.ErrMethod)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		g.ErrTo.ErrToJson(w, errors.New(handler.MethodError))
+		g.ErrTo.ErrToJson(w, util.ErrMethod)
 		return
 	}
 
-	id := r.PathValue("id")
+	idS := r.PathValue("id")
+	id, err := strconv.Atoi(idS)
+	if err != nil {
+		if errors.Is(err, strconv.ErrSyntax) {
+			g.Logger.Error(err)
+			g.ErrTo.ErrToJson(w, util.ErrNI)
+			return
+		}
+		g.Logger.Error(err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
+		return
+	}
 	var response *SteamResponse
 	response = &SteamResponse{GameList: make(map[string]SteamResponseElement)}
-	get, err := http.Get("https://store.steampowered.com/api/appdetails?appids=" + id)
+	get, err := http.Get("https://store.steampowered.com/api/appdetails?appids=" + idS)
 	if err != nil {
 		g.Logger.Error(err)
-		g.ErrTo.ErrToJson(w, err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 	readall, err := io.ReadAll(get.Body)
 	if err != nil {
 		g.Logger.Error(err)
-		g.ErrTo.ErrToJson(w, err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 	err = json.Unmarshal(readall, response)
 	if err != nil {
 		g.Logger.Error(err)
-		g.ErrTo.ErrToJson(w, err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
-	gameName := response.GameList[id].Data.Name
-	gameImage := response.GameList[id].Data.HeaderImage
-	gameDescription := response.GameList[id].Data.ShortDescription[:util.IntMin(255, cap([]byte(response.GameList[id].Data.ShortDescription)))]
+	gameName := response.GameList[idS].Data.Name
+	gameImage := response.GameList[idS].Data.HeaderImage
+	gameDescription := response.GameList[idS].Data.ShortDescription[:util.IntMin(255, cap([]byte(response.GameList[idS].Data.ShortDescription)))]
 	if gameName != "" {
 		_, err = g.Db.Query("INSERT INTO games (steam_id, name, img, description) VALUES ($1, $2, $3, $4)", id, gameName, gameImage, gameDescription)
 		if err != nil {
@@ -152,7 +174,7 @@ func (g Games) Post(w http.ResponseWriter, r *http.Request) {
 				g.ErrTo.ErrToJson(w, errors.New("409 - Game already exists"))
 			} else {
 				g.Logger.Error(err)
-				g.ErrTo.ErrToJson(w, err)
+				g.ErrTo.ErrToJson(w, util.ErrSWW)
 				return
 			}
 		}
@@ -166,20 +188,31 @@ func (g Games) Post(w http.ResponseWriter, r *http.Request) {
 }
 func (g Games) Del(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
-		g.Logger.Error(handler.MethodError)
+		g.Logger.Error(util.ErrMethod)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		g.ErrTo.ErrToJson(w, errors.New(handler.MethodError))
+		g.ErrTo.ErrToJson(w, util.ErrMethod)
 		return
 	}
 
 	var err error
 	var response *sql.Rows
 
-	id := r.PathValue("id")
+	idS := r.PathValue("id")
+	id, err := strconv.Atoi(idS)
+	if err != nil {
+		if errors.Is(err, strconv.ErrSyntax) {
+			g.Logger.Error(err)
+			g.ErrTo.ErrToJson(w, util.ErrNI)
+			return
+		}
+		g.Logger.Error(err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
+		return
+	}
 	response, err = g.Db.Query(repository.SelectGameById, id)
 	if err != nil {
 		g.Logger.Error(err)
-		g.ErrTo.ErrToJson(w, err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 	if !response.Next() {
@@ -190,7 +223,7 @@ func (g Games) Del(w http.ResponseWriter, r *http.Request) {
 	_, err = g.Db.Query(repository.DeleteGameById, id)
 	if err != nil {
 		g.Logger.Error(err)
-		g.ErrTo.ErrToJson(w, err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 	g.Rds.Del(context.Background(), GamesCounter)
@@ -198,9 +231,9 @@ func (g Games) Del(w http.ResponseWriter, r *http.Request) {
 }
 func (g Games) Put(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
-		g.Logger.Error(handler.MethodError)
+		g.Logger.Error(util.ErrMethod)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		g.ErrTo.ErrToJson(w, errors.New(handler.MethodError))
+		g.ErrTo.ErrToJson(w, util.ErrMethod)
 		return
 	}
 
@@ -212,27 +245,38 @@ func (g Games) Put(w http.ResponseWriter, r *http.Request) {
 	requestBody, err = io.ReadAll(r.Body)
 	if err != nil {
 		g.Logger.Error(err)
-		g.ErrTo.ErrToJson(w, err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 	err = json.Unmarshal(requestBody, &gameStruct)
 	if err != nil {
 		g.Logger.Error(err)
-		g.ErrTo.ErrToJson(w, err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 
 	if err = g.Validator.Struct(&gameStruct); err != nil {
 		g.Logger.Error(err)
-		g.ErrTo.ErrToJson(w, err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 
-	id := r.PathValue("id")
+	idS := r.PathValue("id")
+	id, err := strconv.Atoi(idS)
+	if err != nil {
+		if errors.Is(err, strconv.ErrSyntax) {
+			g.Logger.Error(err)
+			g.ErrTo.ErrToJson(w, util.ErrNI)
+			return
+		}
+		g.Logger.Error(err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
+		return
+	}
 	response, err = g.Db.Query(repository.SelectGameById, id)
 	if err != nil {
 		g.Logger.Error(err)
-		g.ErrTo.ErrToJson(w, err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 	if !response.Next() {
@@ -243,16 +287,16 @@ func (g Games) Put(w http.ResponseWriter, r *http.Request) {
 	_, err = g.Db.Query(repository.UpdateGameById, gameStruct.Name, gameStruct.Img, gameStruct.Description, gameStruct.Rating, gameStruct.DeveloperId, gameStruct.PublisherId, id)
 	if err != nil {
 		g.Logger.Error(err)
-		g.ErrTo.ErrToJson(w, err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 }
 
 func (g Games) GetCounter(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		g.Logger.Error(handler.MethodError)
+		g.Logger.Error(util.ErrMethod)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		g.ErrTo.ErrToJson(w, errors.New(handler.MethodError))
+		g.ErrTo.ErrToJson(w, util.ErrMethod)
 		return
 	}
 	count := Counter{}
@@ -264,20 +308,20 @@ func (g Games) GetCounter(w http.ResponseWriter, r *http.Request) {
 		g.Logger.Infof("Redis key %s is empty, getting data from DB", GamesCounter)
 		if err != nil {
 			g.Logger.Error(err)
-			g.ErrTo.ErrToJson(w, err)
+			g.ErrTo.ErrToJson(w, util.ErrSWW)
 			return
 		}
 		g.Rds.Append(context.Background(), GamesCounter, count.Count)
 		marshaled, err = json.Marshal(count)
 		if err != nil {
 			g.Logger.Error(err)
-			g.ErrTo.ErrToJson(w, err)
+			g.ErrTo.ErrToJson(w, util.ErrSWW)
 			return
 		}
 		_, err = w.Write(marshaled)
 		if err != nil {
 			g.Logger.Error(err)
-			g.ErrTo.ErrToJson(w, err)
+			g.ErrTo.ErrToJson(w, util.ErrSWW)
 			return
 		}
 		return
@@ -286,13 +330,13 @@ func (g Games) GetCounter(w http.ResponseWriter, r *http.Request) {
 	marshaled, err = json.Marshal(count)
 	if err != nil {
 		g.Logger.Error(err)
-		g.ErrTo.ErrToJson(w, err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 	_, err = w.Write(marshaled)
 	if err != nil {
 		g.Logger.Error(err)
-		g.ErrTo.ErrToJson(w, err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
 	return
