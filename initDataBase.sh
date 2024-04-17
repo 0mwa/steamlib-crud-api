@@ -10,7 +10,7 @@ docker exec -u postgres postgres psql -c "$(cat \
   migrations/games.sql \
   migrations/developers.sql \
   migrations/publishers.sql \
-  migrations/sessions.sql \
   migrations/users.sql \
+  migrations/sessions.sql \
   migrations/commit.sql \
 )" postgres postgres
