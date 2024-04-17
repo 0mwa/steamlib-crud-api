@@ -1,3 +1,8 @@
+create sequence sessions_id_seq
+    as integer;
+
+alter sequence sessions_id_seq owner to postgres;
+
 create table sessions
 (
     id         integer default nextval('sessions_id_seq'::regclass) not null

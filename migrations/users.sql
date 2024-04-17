@@ -1,3 +1,8 @@
+create sequence users_id_seq
+    as integer;
+
+alter sequence users_id_seq owner to postgres;
+
 create table users
 (
     id     integer default nextval('users_id_seq'::regclass) not null
