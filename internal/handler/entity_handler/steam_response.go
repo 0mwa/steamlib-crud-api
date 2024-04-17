@@ -7,7 +7,7 @@ type SteamResponseElementData struct {
 	HeaderImage      string   `json:"header_image"`
 	ShortDescription string   `json:"short_description"`
 	Publishers       []string `json:"publishers"`
-	//Developers     []string `json:"developers"`
+	Developers       []string `json:"developers"`
 }
 
 type SteamResponseElement struct {
