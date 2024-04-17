@@ -78,12 +78,7 @@ curl -X GET -H "token: 6271879382257613538Matthew" http://localhost:3333/games
 curl -X GET -H "token: 6271879382257613538Matthew" http://localhost:3333/games/440
 ```
 
-### Получение конкретной сущности
-```$xslt
-curl -X GET -H "token: 6271879382257613538Matthew" http://localhost:3333/games/440
-```
-
-### Удаление сущнности
+### Удаление сущности
 ```$xslt
 curl -X DELETE -H "token: 6271879382257613538Matthew" http://localhost:3333/games/delete/440
 ```
