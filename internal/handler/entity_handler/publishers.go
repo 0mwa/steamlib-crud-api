@@ -8,12 +8,14 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/Pallinder/go-randomdata"
 	"github.com/go-playground/validator/v10"
 	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -254,6 +256,19 @@ func (p Publishers) Put(w http.ResponseWriter, r *http.Request) {
 	var requestBody []byte
 	var response *sql.Rows
 
+	idS := r.PathValue("id")
+	id, err := strconv.Atoi(idS)
+	if err != nil {
+		if errors.Is(err, strconv.ErrSyntax) {
+			p.Logger.Error(err)
+			p.ErrTo.ErrToJson(w, util.ErrNI)
+			return
+		}
+		p.Logger.Error(err)
+		p.ErrTo.ErrToJson(w, util.ErrSWW)
+		return
+	}
+
 	pubStruct := DevPubIn{}
 	requestBody, err = io.ReadAll(r.Body)
 	if err != nil {
@@ -274,18 +289,22 @@ func (p Publishers) Put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idS := r.PathValue("id")
-	id, err := strconv.Atoi(idS)
-	if err != nil {
-		if errors.Is(err, strconv.ErrSyntax) {
-			p.Logger.Error(err)
-			p.ErrTo.ErrToJson(w, util.ErrNI)
-			return
+	rStruct := reflect.ValueOf(pubStruct)
+	fieldTag := reflect.TypeOf(pubStruct)
+	var fields []interface{}
+	k := 2
+	fields = append(fields, idS)
+
+	for i := 0; i < rStruct.NumField(); i++ {
+		if !rStruct.Field(i).IsNil() {
+			repository.UpdatePublisherById += fmt.Sprintf("%s = $%d, ", fieldTag.Field(i).Tag.Get("json"), k)
+			fields = append(fields, rStruct.Field(i).Interface())
+			k++
 		}
-		p.Logger.Error(err)
-		p.ErrTo.ErrToJson(w, util.ErrSWW)
-		return
 	}
+	repository.UpdatePublisherById = repository.UpdatePublisherById[:len(repository.UpdatePublisherById)-2]
+	repository.UpdatePublisherById += " WHERE steam_id = $1"
+
 	response, err = p.Db.Query(repository.SelectPublisherById, id)
 	if err != nil {
 		p.Logger.Error(err)
@@ -297,7 +316,7 @@ func (p Publishers) Put(w http.ResponseWriter, r *http.Request) {
 		p.ErrTo.ErrToJson(w, errors.New("409 - no publisher to update with such id"))
 		return
 	}
-	_, err = p.Db.Query(repository.UpdatePublisherById, pubStruct.Name, pubStruct.Country, id)
+	_, err = p.Db.Exec(repository.UpdatePublisherById, fields...)
 	if err != nil {
 		p.Logger.Error(err)
 		p.ErrTo.ErrToJson(w, util.ErrSWW)

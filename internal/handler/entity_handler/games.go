@@ -8,11 +8,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -254,6 +256,19 @@ func (g Games) Put(w http.ResponseWriter, r *http.Request) {
 	var requestBody []byte
 	var response *sql.Rows
 
+	idS := r.PathValue("id")
+	id, err := strconv.Atoi(idS)
+	if err != nil {
+		if errors.Is(err, strconv.ErrSyntax) {
+			g.Logger.Error(err)
+			g.ErrTo.ErrToJson(w, util.ErrNI)
+			return
+		}
+		g.Logger.Error(err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
+		return
+	}
+
 	gameStruct := GameIn{}
 	requestBody, err = io.ReadAll(r.Body)
 	if err != nil {
@@ -274,18 +289,22 @@ func (g Games) Put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idS := r.PathValue("id")
-	id, err := strconv.Atoi(idS)
-	if err != nil {
-		if errors.Is(err, strconv.ErrSyntax) {
-			g.Logger.Error(err)
-			g.ErrTo.ErrToJson(w, util.ErrNI)
-			return
+	rStruct := reflect.ValueOf(gameStruct)
+	fieldTag := reflect.TypeOf(gameStruct)
+	var fields []interface{}
+	k := 2
+	fields = append(fields, idS)
+
+	for i := 0; i < rStruct.NumField(); i++ {
+		if !rStruct.Field(i).IsNil() {
+			repository.UpdateGameById += fmt.Sprintf("%s = $%d, ", fieldTag.Field(i).Tag.Get("json"), k)
+			fields = append(fields, rStruct.Field(i).Interface())
+			k++
 		}
-		g.Logger.Error(err)
-		g.ErrTo.ErrToJson(w, util.ErrSWW)
-		return
 	}
+	repository.UpdateGameById = repository.UpdateGameById[:len(repository.UpdateGameById)-2]
+	repository.UpdateGameById += " WHERE steam_id = $1"
+
 	response, err = g.Db.Query(repository.SelectGameById, id)
 	if err != nil {
 		g.Logger.Error(err)
@@ -297,7 +316,7 @@ func (g Games) Put(w http.ResponseWriter, r *http.Request) {
 		g.ErrTo.ErrToJson(w, errors.New("409 - no game to update with such id"))
 		return
 	}
-	_, err = g.Db.Query(repository.UpdateGameById, gameStruct.Name, gameStruct.Img, gameStruct.Description, gameStruct.Rating, gameStruct.DeveloperId, gameStruct.PublisherId, id)
+	_, err = g.Db.Exec(repository.UpdateGameById, fields...)
 	if err != nil {
 		g.Logger.Error(err)
 		g.ErrTo.ErrToJson(w, util.ErrSWW)

@@ -8,12 +8,14 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/Pallinder/go-randomdata"
 	"github.com/go-playground/validator/v10"
 	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -162,7 +164,7 @@ func (d Developers) Post(w http.ResponseWriter, r *http.Request) {
 		d.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
-	devNameArr := response.GameList[idS].Data.Publishers
+	devNameArr := response.GameList[idS].Data.Developers
 	devCountry := randomdata.Country(randomdata.FullCountry)
 	if len(devNameArr) > 0 {
 		devName := strings.Join(devNameArr, " ")
@@ -254,6 +256,19 @@ func (d Developers) Put(w http.ResponseWriter, r *http.Request) {
 	var requestBody []byte
 	var response *sql.Rows
 
+	idS := r.PathValue("id")
+	id, err := strconv.Atoi(idS)
+	if err != nil {
+		if errors.Is(err, strconv.ErrSyntax) {
+			d.Logger.Error(err)
+			d.ErrTo.ErrToJson(w, util.ErrNI)
+			return
+		}
+		d.Logger.Error(err)
+		d.ErrTo.ErrToJson(w, util.ErrSWW)
+		return
+	}
+
 	devStruct := DevPubIn{}
 	requestBody, err = io.ReadAll(r.Body)
 	if err != nil {
@@ -274,18 +289,22 @@ func (d Developers) Put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idS := r.PathValue("id")
-	id, err := strconv.Atoi(idS)
-	if err != nil {
-		if errors.Is(err, strconv.ErrSyntax) {
-			d.Logger.Error(err)
-			d.ErrTo.ErrToJson(w, util.ErrNI)
-			return
+	rStruct := reflect.ValueOf(devStruct)
+	fieldTag := reflect.TypeOf(devStruct)
+	var fields []interface{}
+	k := 2
+	fields = append(fields, idS)
+
+	for i := 0; i < rStruct.NumField(); i++ {
+		if !rStruct.Field(i).IsNil() {
+			repository.UpdateDeveloperById += fmt.Sprintf("%s = $%d, ", fieldTag.Field(i).Tag.Get("json"), k)
+			fields = append(fields, rStruct.Field(i).Interface())
+			k++
 		}
-		d.Logger.Error(err)
-		d.ErrTo.ErrToJson(w, util.ErrSWW)
-		return
 	}
+	repository.UpdateDeveloperById = repository.UpdateDeveloperById[:len(repository.UpdateDeveloperById)-2]
+	repository.UpdateDeveloperById += " WHERE steam_id = $1"
+
 	response, err = d.Db.Query(repository.SelectDeveloperById, id)
 	if err != nil {
 		d.Logger.Error(err)
@@ -297,7 +316,7 @@ func (d Developers) Put(w http.ResponseWriter, r *http.Request) {
 		d.ErrTo.ErrToJson(w, errors.New("409 - no developer to update with such id"))
 		return
 	}
-	_, err = d.Db.Query(repository.UpdatePublisherById, devStruct.Name, devStruct.Country, id)
+	_, err = d.Db.Exec(repository.UpdateDeveloperById, fields...)
 	if err != nil {
 		d.Logger.Error(err)
 		d.ErrTo.ErrToJson(w, util.ErrSWW)

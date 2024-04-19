@@ -31,13 +31,6 @@ var DeleteGameById = `
 var UpdateGameById = `
 			UPDATE games
 			SET 
-			    name = $1,
-			    img = $2,
-			    description = $3,
-			    rating = $4,
-			    developer_id = $5,
-			    publisher_id = $6
-			WHERE steam_id = $7
 		`
 var SelectPublishers = `
 			SELECT
@@ -62,9 +55,6 @@ var DeletePublisherById = `
 var UpdatePublisherById = `
 			UPDATE publishers
 			SET
-			    name = $1,
-				country = $2
-			WHERE steam_id = $3
 		`
 var SelectDevelopers = `
 			SELECT
@@ -89,9 +79,6 @@ var DeleteDeveloperById = `
 var UpdateDeveloperById = `
 			UPDATE developers
 			SET
-			    name = $1,
-				country = $2
-			WHERE steam_id = $3
 		`
 var GetGamesCount = `
 			SELECT COUNT (*)
