@@ -166,7 +166,7 @@ func (g Games) Post(w http.ResponseWriter, r *http.Request) {
 	}
 	gameName := response.GameList[idS].Data.Name
 	gameImage := response.GameList[idS].Data.HeaderImage
-	gameDescription := response.GameList[idS].Data.ShortDescription[:util.IntMin(255, cap([]byte(response.GameList[idS].Data.ShortDescription)))]
+	gameDescription := response.GameList[idS].Data.ShortDescription[:min(255, cap([]byte(response.GameList[idS].Data.ShortDescription)))]
 	if gameName != "" {
 		_, err = g.Db.Query("INSERT INTO games (steam_id, name, img, description) VALUES ($1, $2, $3, $4)", id, gameName, gameImage, gameDescription)
 		if err != nil {
