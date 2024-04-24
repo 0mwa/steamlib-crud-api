@@ -167,8 +167,17 @@ func (p Publishers) Post(w http.ResponseWriter, r *http.Request) {
 	pubNameArr := response.GameList[idS].Data.Publishers
 	pubCountry := randomdata.Country(randomdata.FullCountry)
 	if len(pubNameArr) > 0 {
+
+		var stmt *sql.Stmt
+		stmt, err = p.Db.Prepare("INSERT INTO publishers (name, country, steam_id) VALUES ($1, $2, $3)")
+		if err != nil {
+			p.Logger.Error(err)
+			p.ErrTo.ErrToJson(w, util.ErrSWW)
+			return
+		}
+
 		pubName := strings.Join(pubNameArr, " ")
-		_, err = p.Db.Query("INSERT INTO publishers (name, country, steam_id) VALUES ($1, $2, $3)", pubName, pubCountry, id)
+		_, err = stmt.Query(pubName, pubCountry, id)
 		if err != nil {
 			if strings.Contains(err.Error(), "\"pubsteam_id_unique\"") {
 				w.WriteHeader(http.StatusConflict)
@@ -316,12 +325,24 @@ func (p Publishers) Put(w http.ResponseWriter, r *http.Request) {
 		p.ErrTo.ErrToJson(w, errors.New("409 - no publisher to update with such id"))
 		return
 	}
-	_, err = p.Db.Exec(repository.UpdatePublisherById, fields...)
+
+	var stmt *sql.Stmt
+	stmt, err = p.Db.Prepare(repository.SelectPublisherById)
 	if err != nil {
 		p.Logger.Error(err)
 		p.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
+
+	_, err = stmt.Query(fields...)
+	if err != nil {
+		p.Logger.Error(err)
+		p.ErrTo.ErrToJson(w, util.ErrSWW)
+		return
+	}
+
+	repository.UpdatePublisherById = "UPDATE publishers SET "
+
 	_, err = w.Write([]byte(`{"msg":"Success"}`))
 	if err != nil {
 		p.Logger.Error(err)

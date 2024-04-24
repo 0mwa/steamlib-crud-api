@@ -91,8 +91,7 @@ curl -X PUT -H "token: 6271879382257613538Matthew" http://localhost:3333/games/u
                                                            "description": "",
                                                            "rating": 10,
                                                            "developer_id": 4,
-                                                           "publisher_id": 4,
-                                                           "steam_id": 440
+                                                           "publisher_id": 4
                                                           }'
 ```
 

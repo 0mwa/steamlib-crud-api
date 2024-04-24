@@ -28,10 +28,7 @@ var DeleteGameById = `
 			FROM games
 			WHERE steam_id = $1
 		`
-var UpdateGameById = `
-			UPDATE games
-			SET 
-		`
+var UpdateGameById = `UPDATE games SET `
 var SelectPublishers = `
 			SELECT
 				COALESCE(name,'NULL'),
@@ -52,10 +49,7 @@ var DeletePublisherById = `
 			FROM publishers
 			WHERE steam_id = $1
 		`
-var UpdatePublisherById = `
-			UPDATE publishers
-			SET
-		`
+var UpdatePublisherById = `UPDATE publishers SET `
 var SelectDevelopers = `
 			SELECT
 				COALESCE(name,'NULL'),
@@ -76,10 +70,7 @@ var DeleteDeveloperById = `
 			FROM developers
 			WHERE steam_id = $1
 		`
-var UpdateDeveloperById = `
-			UPDATE developers
-			SET
-		`
+var UpdateDeveloperById = `UPDATE developers SET `
 var GetGamesCount = `
 			SELECT COUNT (*)
 			FROM games

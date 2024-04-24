@@ -168,7 +168,14 @@ func (g Games) Post(w http.ResponseWriter, r *http.Request) {
 	gameImage := response.GameList[idS].Data.HeaderImage
 	gameDescription := response.GameList[idS].Data.ShortDescription[:min(255, cap([]byte(response.GameList[idS].Data.ShortDescription)))]
 	if gameName != "" {
-		_, err = g.Db.Query("INSERT INTO games (steam_id, name, img, description) VALUES ($1, $2, $3, $4)", id, gameName, gameImage, gameDescription)
+		var stmt *sql.Stmt
+		stmt, err = g.Db.Prepare("INSERT INTO games (steam_id, name, img, description) VALUES ($1, $2, $3, $4)")
+		if err != nil {
+			g.Logger.Error(err)
+			g.ErrTo.ErrToJson(w, util.ErrSWW)
+			return
+		}
+		_, err = stmt.Query(id, gameName, gameImage, gameDescription)
 		if err != nil {
 			if strings.Contains(err.Error(), "\"steam_id_unique\"") {
 				w.WriteHeader(http.StatusConflict)
@@ -316,12 +323,24 @@ func (g Games) Put(w http.ResponseWriter, r *http.Request) {
 		g.ErrTo.ErrToJson(w, errors.New("409 - no game to update with such id"))
 		return
 	}
-	_, err = g.Db.Exec(repository.UpdateGameById, fields...)
+
+	var stmt *sql.Stmt
+	stmt, err = g.Db.Prepare(repository.UpdateGameById)
 	if err != nil {
 		g.Logger.Error(err)
 		g.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
+
+	_, err = stmt.Query(fields...)
+	if err != nil {
+		g.Logger.Error(err)
+		g.ErrTo.ErrToJson(w, util.ErrSWW)
+		return
+	}
+
+	repository.UpdateGameById = "UPDATE games SET "
+
 	_, err = w.Write([]byte(`{"msg":"Success"}`))
 	if err != nil {
 		g.Logger.Error(err)

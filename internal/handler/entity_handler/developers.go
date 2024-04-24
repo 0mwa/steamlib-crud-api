@@ -167,8 +167,17 @@ func (d Developers) Post(w http.ResponseWriter, r *http.Request) {
 	devNameArr := response.GameList[idS].Data.Developers
 	devCountry := randomdata.Country(randomdata.FullCountry)
 	if len(devNameArr) > 0 {
+
+		var stmt *sql.Stmt
+		stmt, err = d.Db.Prepare("INSERT INTO developers (name, country, steam_id) VALUES ($1, $2, $3)")
+		if err != nil {
+			d.Logger.Error(err)
+			d.ErrTo.ErrToJson(w, util.ErrSWW)
+			return
+		}
+
 		devName := strings.Join(devNameArr, " ")
-		_, err = d.Db.Query("INSERT INTO developers (name, country, steam_id) VALUES ($1, $2, $3)", devName, devCountry, id)
+		_, err = stmt.Query(devName, devCountry, id)
 		if err != nil {
 			if strings.Contains(err.Error(), "\"devsteam_id_unique\"") {
 				w.WriteHeader(http.StatusConflict)
@@ -316,12 +325,24 @@ func (d Developers) Put(w http.ResponseWriter, r *http.Request) {
 		d.ErrTo.ErrToJson(w, errors.New("409 - no developer to update with such id"))
 		return
 	}
-	_, err = d.Db.Exec(repository.UpdateDeveloperById, fields...)
+
+	var stmt *sql.Stmt
+	stmt, err = d.Db.Prepare(repository.UpdateDeveloperById)
 	if err != nil {
 		d.Logger.Error(err)
 		d.ErrTo.ErrToJson(w, util.ErrSWW)
 		return
 	}
+
+	_, err = stmt.Query(fields...)
+	if err != nil {
+		d.Logger.Error(err)
+		d.ErrTo.ErrToJson(w, util.ErrSWW)
+		return
+	}
+
+	repository.UpdateDeveloperById = "UPDATE developers SET "
+
 	_, err = w.Write([]byte(`{"msg":"Success"}`))
 	if err != nil {
 		d.Logger.Error(err)

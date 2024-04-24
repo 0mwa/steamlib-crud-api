@@ -31,4 +31,4 @@ CRUD API TODO
 - [ ] Сделать так, чтобы при POST игры подцеплялись Dev и Pub
 - [x] Id при GET равен 0, всегда 
 - [x] Сделать проверку на передачу не int в адресе 
-- [ ] Защита от инъекций при передачи полей -> https://go.dev/doc/database/prepared-statements
+- [x] Защита от инъекций при передачи полей -> https://go.dev/doc/database/prepared-statements
